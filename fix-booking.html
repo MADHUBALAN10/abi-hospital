@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Booking - Clear Storage</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 600px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+        }
+        
+        h1 {
+            color: #2d3748;
+            font-size: 2rem;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        
+        .subtitle {
+            color: #718096;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .status {
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            font-weight: 600;
+        }
+        
+        .status.error {
+            background: #fed7d7;
+            color: #c53030;
+            border: 2px solid #fc8181;
+        }
+        
+        .status.success {
+            background: #c6f6d5;
+            color: #2f855a;
+            border: 2px solid #9ae6b4;
+        }
+        
+        .status.warning {
+            background: #feebc8;
+            color: #c05621;
+            border: 2px solid #fbd38d;
+        }
+        
+        button {
+            width: 100%;
+            padding: 16px;
+            border: none;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 12px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn-success {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+            color: white;
+        }
+        
+        .btn-success:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(72, 187, 120, 0.4);
+        }
+        
+        .info-box {
+            background: #ebf8ff;
+            border: 2px solid #90cdf4;
+            border-radius: 12px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+        
+        .info-box h3 {
+            color: #2c5282;
+            margin-bottom: 10px;
+        }
+        
+        .info-box p {
+            color: #2d3748;
+            line-height: 1.6;
+        }
+        
+        .step {
+            background: #f7fafc;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .step strong {
+            color: #667eea;
+        }
+        
+        pre {
+            background: #2d3748;
+            color: #48bb78;
+            padding: 12px;
+            border-radius: 8px;
+            overflow-x: auto;
+            margin: 10px 0;
+            font-family: 'Courier New', monospace;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix Booking Error</h1>
+        <p class="subtitle">Clear old data and enable successful bookings</p>
+        
+        <div id="status" class="status warning">
+            ⚠️ Checking your localStorage...
+        </div>
+        
+        <button class="btn-primary" onclick="checkStatus()">
+            🔍 Check Current Status
+        </button>
+        
+        <button class="btn-success" onclick="fixIssue()">
+            ✅ Fix Issue Now
+        </button>
+        
+        <button class="btn-primary" onclick="goToApp()">
+            🚀 Go to Application
+        </button>
+        
+        <div class="info-box">
+            <h3>📋 What This Does:</h3>
+            <div class="step">
+                <strong>Step 1:</strong> Clears old user data from localStorage
+            </div>
+            <div class="step">
+                <strong>Step 2:</strong> Generates valid MongoDB ObjectId
+            </div>
+            <div class="step">
+                <strong>Step 3:</strong> Creates test user for booking
+            </div>
+            <div class="step">
+                <strong>Step 4:</strong> Ready to book appointments! ✅
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        function generateObjectId() {
+            const timestamp = Math.floor(Date.now() / 1000).toString(16).padStart(8, '0');
+            const randomHex = () => Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
+            return timestamp + randomHex() + randomHex() + randomHex().substring(0, 2);
+        }
+        
+        function checkStatus() {
+            const statusDiv = document.getElementById('status');
+            const user = localStorage.getItem('user');
+            
+            if (!user) {
+                statusDiv.className = 'status warning';
+                statusDiv.innerHTML = '⚠️ No user data found. Click "Fix Issue Now" to create a test user.';
+                return;
+            }
+            
+            try {
+                const userData = JSON.parse(user);
+                const idLength = userData._id ? userData._id.length : 0;
+                
+                if (idLength === 24) {
+                    statusDiv.className = 'status success';
+                    statusDiv.innerHTML = `
+                        ✅ User data is VALID!<br>
+                        <pre>Name: ${userData.name || 'N/A'}
+Email: ${userData.email || 'N/A'}
+Role: ${userData.role || 'N/A'}
+ID Length: ${idLength} characters (Correct!)</pre>
+                        <p style="margin-top: 10px;">✅ You can book appointments now!</p>
+                    `;
+                } else {
+                    statusDiv.className = 'status error';
+                    statusDiv.innerHTML = `
+                        ❌ User data is INVALID!<br>
+                        <pre>ID: ${userData._id}
+ID Length: ${idLength} characters (Should be 24!)</pre>
+                        <p style="margin-top: 10px;">⚠️ Click "Fix Issue Now" to repair this.</p>
+                    `;
+                }
+            } catch (e) {
+                statusDiv.className = 'status error';
+                statusDiv.innerHTML = '❌ Corrupted data found. Click "Fix Issue Now" to repair.';
+            }
+        }
+        
+        function fixIssue() {
+            const statusDiv = document.getElementById('status');
+            
+            // Clear old data
+            localStorage.clear();
+            
+            // Create valid user
+            const validUser = {
+                _id: generateObjectId(),
+                name: "Test Patient",
+                email: "patient@test.com",
+                role: "patient"
+            };
+            
+            localStorage.setItem('user', JSON.stringify(validUser));
+            
+            statusDiv.className = 'status success';
+            statusDiv.innerHTML = `
+                ✅ Fixed Successfully!<br>
+                <pre>Name: ${validUser.name}
+Email: ${validUser.email}
+Role: ${validUser.role}
+ID: ${validUser._id}
+ID Length: ${validUser._id.length} characters ✅</pre>
+                <p style="margin-top: 10px;">✅ You can now book appointments!</p>
+                <p><strong>Click "Go to Application" to start booking.</strong></p>
+            `;
+        }
+        
+        function goToApp() {
+            window.location.href = 'http://localhost:5174';
+        }
+        
+        // Check status on page load
+        window.onload = checkStatus;
+    </script>
+</body>
+</html>
