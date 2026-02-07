@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { FaUserMd, FaPills, FaMoneyBillWave, FaWhatsapp, FaChartPie, FaSignOutAlt, FaBell, FaUsers, FaCalendarAlt, FaPlus, FaEdit, FaTrash } from 'react-icons/fa';
+import { FaUserMd, FaPills, FaMoneyBillWave, FaWhatsapp, FaChartPie, FaSignOutAlt, FaBell, FaUsers, FaCalendarAlt, FaPlus, FaEdit, FaTrash, FaStethoscope } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import axios from 'axios';
@@ -17,11 +17,26 @@ const AdminDashboard = () => {
     });
     const [appointments, setAppointments] = useState([]);
     const [inventory, setInventory] = useState([]);
+    const [showInventoryModal, setShowInventoryModal] = useState(false);
+    const [inventoryFormData, setInventoryFormData] = useState({
+        itemName: '',
+        category: '',
+        stockQuantity: '',
+        unitPrice: ''
+    });
+    const [editingInventoryId, setEditingInventoryId] = useState(null);
     const [doctors, setDoctors] = useState([]);
     const navigate = useNavigate();
 
     useEffect(() => {
         fetchData();
+        // Refresh appointments every 5 seconds for real-time updates
+        const interval = setInterval(() => {
+            if (activeTab === 'appointments' || activeTab === 'overview') {
+                fetchData();
+            }
+        }, 5000);
+        return () => clearInterval(interval);
     }, [activeTab]);
 
     const fetchData = async () => {
@@ -81,20 +96,59 @@ const AdminDashboard = () => {
         toast.success('Logged out successfully');
     };
 
-    const handleAddInventory = async () => {
-        const newItem = {
-            itemName: 'New Medicine',
-            category: 'Medicine',
-            stockQuantity: 100,
-            unitPrice: 10
-        };
+    const handleOpenInventoryModal = (item = null) => {
+        if (item) {
+            setInventoryFormData({
+                itemName: item.itemName,
+                category: item.category,
+                stockQuantity: item.stockQuantity,
+                unitPrice: item.unitPrice
+            });
+            setEditingInventoryId(item._id);
+        } else {
+            setInventoryFormData({
+                itemName: '',
+                category: '',
+                stockQuantity: '',
+                unitPrice: ''
+            });
+            setEditingInventoryId(null);
+        }
+        setShowInventoryModal(true);
+    };
+
+    const handleCloseInventoryModal = () => {
+        setShowInventoryModal(false);
+        setEditingInventoryId(null);
+        setInventoryFormData({
+            itemName: '',
+            category: '',
+            stockQuantity: '',
+            unitPrice: ''
+        });
+    };
+
+    const handleSaveInventory = async () => {
+        if (!inventoryFormData.itemName || !inventoryFormData.category || !inventoryFormData.stockQuantity || !inventoryFormData.unitPrice) {
+            toast.error('Please fill in all fields');
+            return;
+        }
 
         try {
-            const res = await axios.post(`${API_URL}/inventory`, newItem);
-            setInventory([...inventory, res.data]);
-            toast.success('Item added successfully');
+            if (editingInventoryId) {
+                // Update existing item
+                const res = await axios.put(`${API_URL}/inventory/${editingInventoryId}`, inventoryFormData);
+                setInventory(inventory.map(item => item._id === editingInventoryId ? res.data : item));
+                toast.success('Item updated successfully');
+            } else {
+                // Add new item
+                const res = await axios.post(`${API_URL}/inventory`, inventoryFormData);
+                setInventory([...inventory, res.data]);
+                toast.success('Item added successfully');
+            }
+            handleCloseInventoryModal();
         } catch (error) {
-            toast.error('Failed to add item');
+            toast.error(error.response?.data?.message || 'Failed to save item');
         }
     };
 
@@ -160,6 +214,13 @@ const AdminDashboard = () => {
                         active={activeTab === 'overview'}
                         onClick={() => setActiveTab('overview')}
                         badge={stats.appointments > 0 ? stats.appointments : null}
+                    />
+                    <NavItem
+                        icon={<FaCalendarAlt />}
+                        label="Appointments"
+                        active={activeTab === 'appointments'}
+                        onClick={() => setActiveTab('appointments')}
+                        count={appointments.length}
                     />
                     <NavItem
                         icon={<FaUserMd />}
@@ -329,9 +390,10 @@ const AdminDashboard = () => {
                 ) : (
                     <>
                         {activeTab === 'overview' && <Overview stats={stats} appointments={appointments} />}
-                        {activeTab === 'stock' && <MedicalStock inventory={inventory} onAdd={handleAddInventory} onDelete={handleDeleteInventory} />}
+                        {activeTab === 'appointments' && <AppointmentsTab appointments={appointments} onRefresh={fetchData} />}
+                        {activeTab === 'stock' && <MedicalStock inventory={inventory} onAdd={() => handleOpenInventoryModal()} onEdit={handleOpenInventoryModal} onDelete={handleDeleteInventory} />}
                         {activeTab === 'payments' && <Payments appointments={appointments} stats={stats} />}
-                        {activeTab === 'doctors' && <DoctorsTeam doctors={doctors} onRefresh={fetchData} />}
+                        {/* {activeTab === 'doctors' && <DoctorsTeam doctors={doctors} onRefresh={fetchData} />} */}
                         {activeTab === 'whatsapp' && <WhatsAppConfig />}
                     </>
                 )}
@@ -342,6 +404,277 @@ const AdminDashboard = () => {
           to { transform: rotate(360deg); }
         }
       `}</style>
+
+            {/* Inventory Form Modal */}
+            {showInventoryModal && (
+                <div style={{
+                    position: 'fixed',
+                    inset: 0,
+                    background: 'rgba(0, 0, 0, 0.6)',
+                    backdropFilter: 'blur(12px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 9999,
+                    animation: 'fadeIn 0.3s ease-out'
+                }}>
+                    <div style={{
+                        background: 'white',
+                        borderRadius: '24px',
+                        padding: '2.5rem',
+                        maxWidth: '500px',
+                        width: '90%',
+                        boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
+                        animation: 'slideUp 0.4s ease-out'
+                    }}>
+                        {/* Close Button */}
+                        <button
+                            onClick={handleCloseInventoryModal}
+                            style={{
+                                position: 'absolute',
+                                top: '1.5rem',
+                                right: '1.5rem',
+                                background: '#f1f5f9',
+                                border: 'none',
+                                width: '44px',
+                                height: '44px',
+                                borderRadius: '12px',
+                                fontSize: '1.5rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.3s ease'
+                            }}
+                            onMouseOver={(e) => {
+                                e.target.style.background = '#e2e8f0';
+                                e.target.style.transform = 'rotate(90deg)';
+                            }}
+                            onMouseOut={(e) => {
+                                e.target.style.background = '#f1f5f9';
+                                e.target.style.transform = 'rotate(0deg)';
+                            }}
+                        >
+                            ✕
+                        </button>
+
+                        {/* Header */}
+                        <h2 style={{
+                            fontSize: '2rem',
+                            fontWeight: '800',
+                            color: '#1e293b',
+                            marginBottom: '2rem',
+                            background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            backgroundClip: 'text'
+                        }}>
+                            {editingInventoryId ? '✏️ Edit Item' : '📦 Add New Item'}
+                        </h2>
+
+                        {/* Form Fields */}
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '700', color: '#475569', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+                                Item Name
+                            </label>
+                            <input
+                                type="text"
+                                placeholder="e.g., Paracetamol 500mg"
+                                value={inventoryFormData.itemName}
+                                onChange={(e) => setInventoryFormData({ ...inventoryFormData, itemName: e.target.value })}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.875rem 1rem',
+                                    border: '2px solid #e2e8f0',
+                                    borderRadius: '12px',
+                                    fontSize: '1rem',
+                                    fontFamily: 'inherit',
+                                    transition: 'all 0.3s ease',
+                                    boxSizing: 'border-box'
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.borderColor = '#667eea';
+                                    e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderColor = '#e2e8f0';
+                                    e.target.style.boxShadow = 'none';
+                                }}
+                            />
+                        </div>
+
+                        <div style={{ marginBottom: '1.5rem' }}>
+                            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '700', color: '#475569', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+                                Category
+                            </label>
+                            <select
+                                value={inventoryFormData.category}
+                                onChange={(e) => setInventoryFormData({ ...inventoryFormData, category: e.target.value })}
+                                style={{
+                                    width: '100%',
+                                    padding: '0.875rem 1rem',
+                                    border: '2px solid #e2e8f0',
+                                    borderRadius: '12px',
+                                    fontSize: '1rem',
+                                    fontFamily: 'inherit',
+                                    transition: 'all 0.3s ease',
+                                    boxSizing: 'border-box',
+                                    cursor: 'pointer'
+                                }}
+                                onFocus={(e) => {
+                                    e.target.style.borderColor = '#667eea';
+                                    e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+                                }}
+                                onBlur={(e) => {
+                                    e.target.style.borderColor = '#e2e8f0';
+                                    e.target.style.boxShadow = 'none';
+                                }}
+                            >
+                                <option value="">Select Category</option>
+                                <option value="Medicine">Medicine</option>
+                                <option value="Equipment">Equipment</option>
+                                <option value="Supplies">Supplies</option>
+                                <option value="Vaccines">Vaccines</option>
+                                <option value="Antibiotics">Antibiotics</option>
+                                <option value="Other">Other</option>
+                            </select>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginBottom: '1.5rem' }}>
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '700', color: '#475569', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+                                    Stock Quantity
+                                </label>
+                                <input
+                                    type="number"
+                                    placeholder="e.g., 100"
+                                    value={inventoryFormData.stockQuantity}
+                                    onChange={(e) => setInventoryFormData({ ...inventoryFormData, stockQuantity: e.target.value })}
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.875rem 1rem',
+                                        border: '2px solid #e2e8f0',
+                                        borderRadius: '12px',
+                                        fontSize: '1rem',
+                                        fontFamily: 'inherit',
+                                        transition: 'all 0.3s ease',
+                                        boxSizing: 'border-box'
+                                    }}
+                                    onFocus={(e) => {
+                                        e.target.style.borderColor = '#667eea';
+                                        e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.target.style.borderColor = '#e2e8f0';
+                                        e.target.style.boxShadow = 'none';
+                                    }}
+                                />
+                            </div>
+
+                            <div>
+                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '700', color: '#475569', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+                                    Unit Price ($)
+                                </label>
+                                <input
+                                    type="number"
+                                    placeholder="e.g., 10"
+                                    step="0.01"
+                                    value={inventoryFormData.unitPrice}
+                                    onChange={(e) => setInventoryFormData({ ...inventoryFormData, unitPrice: e.target.value })}
+                                    style={{
+                                        width: '100%',
+                                        padding: '0.875rem 1rem',
+                                        border: '2px solid #e2e8f0',
+                                        borderRadius: '12px',
+                                        fontSize: '1rem',
+                                        fontFamily: 'inherit',
+                                        transition: 'all 0.3s ease',
+                                        boxSizing: 'border-box'
+                                    }}
+                                    onFocus={(e) => {
+                                        e.target.style.borderColor = '#667eea';
+                                        e.target.style.boxShadow = '0 0 0 3px rgba(102, 126, 234, 0.1)';
+                                    }}
+                                    onBlur={(e) => {
+                                        e.target.style.borderColor = '#e2e8f0';
+                                        e.target.style.boxShadow = 'none';
+                                    }}
+                                />
+                            </div>
+                        </div>
+
+                        {/* Summary */}
+                        {inventoryFormData.stockQuantity && inventoryFormData.unitPrice && (
+                            <div style={{
+                                padding: '1.5rem',
+                                background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
+                                borderRadius: '12px',
+                                border: '2px solid #bae6fd',
+                                marginBottom: '2rem'
+                            }}>
+                                <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '0.5rem', fontWeight: '600' }}>
+                                    Total Value:
+                                </p>
+                                <p style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0369a1' }}>
+                                    ${(parseFloat(inventoryFormData.stockQuantity) * parseFloat(inventoryFormData.unitPrice)).toFixed(2)}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Buttons */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
+                            <button
+                                onClick={handleCloseInventoryModal}
+                                style={{
+                                    padding: '1rem',
+                                    background: '#f1f5f9',
+                                    color: '#0f172a',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    fontWeight: '700',
+                                    fontSize: '1rem',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease'
+                                }}
+                                onMouseOver={(e) => {
+                                    e.target.style.background = '#e2e8f0';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.target.style.background = '#f1f5f9';
+                                }}
+                            >
+                                Cancel
+                            </button>
+
+                            <button
+                                onClick={handleSaveInventory}
+                                style={{
+                                    padding: '1rem',
+                                    background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                                    color: 'white',
+                                    border: 'none',
+                                    borderRadius: '12px',
+                                    fontWeight: '700',
+                                    fontSize: '1rem',
+                                    cursor: 'pointer',
+                                    transition: 'all 0.3s ease',
+                                    boxShadow: '0 10px 30px rgba(102, 126, 234, 0.4)'
+                                }}
+                                onMouseOver={(e) => {
+                                    e.target.style.transform = 'translateY(-2px)';
+                                    e.target.style.boxShadow = '0 15px 40px rgba(102, 126, 234, 0.6)';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.target.style.transform = 'translateY(0)';
+                                    e.target.style.boxShadow = '0 10px 30px rgba(102, 126, 234, 0.4)';
+                                }}
+                            >
+                                {editingInventoryId ? '💾 Update Item' : '➕ Add Item'}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -555,241 +888,297 @@ const StatCard = ({ title, value, change, icon, gradient }) => (
 );
 
 // Medical Stock Section
-const MedicalStock = ({ inventory, onAdd, onDelete }) => (
-    <div className="glass-card">
-        <div style={{
-            display: 'flex',
-            justifyContent: 'space-between',
-            alignItems: 'center',
-            marginBottom: '2rem'
-        }}>
-            <div>
-                <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#0f172a', marginBottom: '0.5rem' }}>
-                    Inventory Management
-                </h3>
-                <p style={{ color: '#64748b' }}>Track and manage medical supplies</p>
+const MedicalStock = ({ inventory, onAdd, onEdit, onDelete }) => {
+    const [isRefreshing, setIsRefreshing] = React.useState(false);
+    const totalItems = inventory.length;
+    const totalStock = inventory.reduce((sum, item) => sum + item.stockQuantity, 0);
+    const lowStockItems = inventory.filter(item => item.stockQuantity <= 20).length;
+    const totalValue = inventory.reduce((sum, item) => sum + (item.stockQuantity * item.unitPrice), 0);
+
+    const handleRefresh = async () => {
+        setIsRefreshing(true);
+        try {
+            const res = await axios.get(`${API_URL}/inventory`);
+            setInventory(res.data);
+            toast.success('✅ Stock updated successfully');
+        } catch (error) {
+            toast.error('Failed to refresh inventory');
+        } finally {
+            setIsRefreshing(false);
+        }
+    };
+
+    return (
+        <div>
+            {/* Analytics Cards */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
+                <div style={{
+                    background: '#f0f4ff',
+                    borderRadius: '16px',
+                    padding: '1.5rem',
+                    color: '#4c63d2',
+                    border: '1px solid #e0e7ff',
+                    boxShadow: '0 4px 12px rgba(79, 99, 210, 0.08)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
+                        <div style={{ fontSize: '2rem' }}>📦</div>
+                        <p style={{ fontSize: '0.875rem', fontWeight: '600', color: '#7c8ff2' }}>Total Items</p>
+                    </div>
+                    <p style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '0.5rem', color: '#4c63d2' }}>{totalItems}</p>
+                    <p style={{ fontSize: '0.875rem', color: '#8b9ddd' }}>Medical supplies in stock</p>
+                </div>
+
+                <div style={{
+                    background: '#f0fdf4',
+                    borderRadius: '16px',
+                    padding: '1.5rem',
+                    color: '#15803d',
+                    border: '1px solid #dcfce7',
+                    boxShadow: '0 4px 12px rgba(21, 128, 61, 0.08)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
+                        <div style={{ fontSize: '2rem' }}>📊</div>
+                        <p style={{ fontSize: '0.875rem', fontWeight: '600', color: '#22c55e' }}>Total Stock</p>
+                    </div>
+                    <p style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '0.5rem', color: '#15803d' }}>{totalStock}</p>
+                    <p style={{ fontSize: '0.875rem', color: '#4ade80' }}>Units available</p>
+                </div>
+
+                <div style={{
+                    background: '#fffbeb',
+                    borderRadius: '16px',
+                    padding: '1.5rem',
+                    color: '#b45309',
+                    border: '1px solid #fef3c7',
+                    boxShadow: '0 4px 12px rgba(180, 83, 9, 0.08)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
+                        <div style={{ fontSize: '2rem' }}>⚠️</div>
+                        <p style={{ fontSize: '0.875rem', fontWeight: '600', color: '#d97706' }}>Low Stock</p>
+                    </div>
+                    <p style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '0.5rem', color: '#b45309' }}>{lowStockItems}</p>
+                    <p style={{ fontSize: '0.875rem', color: '#f59e0b' }}>Items below 20 units</p>
+                </div>
+
+                <div style={{
+                    background: '#eff6ff',
+                    borderRadius: '16px',
+                    padding: '1.5rem',
+                    color: '#0c4a6e',
+                    border: '1px solid #e0f2fe',
+                    boxShadow: '0 4px 12px rgba(12, 74, 110, 0.08)'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '0.75rem' }}>
+                        <div style={{ fontSize: '2rem' }}>💰</div>
+                        <p style={{ fontSize: '0.875rem', fontWeight: '600', color: '#0284c7' }}>Total Value</p>
+                    </div>
+                    <p style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '0.5rem', color: '#0c4a6e' }}>${totalValue.toFixed(0)}</p>
+                    <p style={{ fontSize: '0.875rem', color: '#0ea5e9' }}>Inventory value</p>
+                </div>
             </div>
-            <button className="btn btn-primary" onClick={onAdd}>
-                <FaPlus /> Add Item
-            </button>
-        </div>
 
-        <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.5rem' }}>
-                <thead>
-                    <tr>
-                        <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            Item Name
-                        </th>
-                        <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            Category
-                        </th>
-                        <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            Stock
-                        </th>
-                        <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            Price
-                        </th>
-                        <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.75rem', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                            Actions
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {inventory.map((item) => {
-                        const stockLevel = item.stockQuantity > 50 ? 'high' : item.stockQuantity > 20 ? 'medium' : 'low';
-                        const colors = { high: '#10b981', medium: '#f59e0b', low: '#ef4444' };
-
-                        return (
-                            <tr key={item._id} className="card" style={{ background: 'white' }}>
-                                <td style={{ padding: '1.25rem 1rem', fontWeight: '600', color: '#0f172a', borderRadius: '12px 0 0 12px' }}>
-                                    {item.itemName}
-                                </td>
-                                <td style={{ padding: '1.25rem 1rem', color: '#64748b' }}>
-                                    <span style={{
-                                        padding: '0.375rem 0.75rem',
-                                        background: '#f1f5f9',
-                                        borderRadius: '8px',
-                                        fontSize: '0.875rem',
-                                        fontWeight: '500'
-                                    }}>
-                                        {item.category}
-                                    </span>
-                                </td>
-                                <td style={{ padding: '1.25rem 1rem' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                                        <span style={{ fontWeight: '600', color: '#0f172a', minWidth: '40px' }}>{item.stockQuantity}</span>
-                                        <div style={{
-                                            width: '100px',
-                                            height: '8px',
-                                            background: '#f1f5f9',
-                                            borderRadius: '4px',
-                                            overflow: 'hidden'
-                                        }}>
-                                            <div style={{
-                                                width: `${Math.min((item.stockQuantity / 100) * 100, 100)}%`,
-                                                height: '100%',
-                                                background: colors[stockLevel],
-                                                borderRadius: '4px',
-                                                transition: 'width 0.3s'
-                                            }}></div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td style={{ padding: '1.25rem 1rem', fontFamily: 'monospace', fontWeight: '600', color: '#0f172a' }}>
-                                    ${item.unitPrice}
-                                </td>
-                                <td style={{ padding: '1.25rem 1rem', textAlign: 'right', borderRadius: '0 12px 12px 0' }}>
-                                    <button style={{
-                                        background: 'none',
-                                        border: 'none',
-                                        color: '#0891b2',
-                                        fontWeight: '600',
-                                        fontSize: '0.875rem',
-                                        cursor: 'pointer',
-                                        marginRight: '1rem'
-                                    }}>
-                                        <FaEdit /> Edit
-                                    </button>
-                                    <button
-                                        onClick={() => onDelete(item._id)}
-                                        style={{
-                                            background: 'none',
-                                            border: 'none',
-                                            color: '#ef4444',
-                                            fontWeight: '600',
-                                            fontSize: '0.875rem',
-                                            cursor: 'pointer'
-                                        }}
-                                    >
-                                        <FaTrash />
-                                    </button>
-                                </td>
-                            </tr>
-                        );
-                    })}
-                </tbody>
-            </table>
-        </div>
-    </div>
-);
-
-// Payments Section
-const Payments = ({ appointments, stats }) => (
-    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '1.5rem' }}>
-        <div style={{ gridColumn: 'span 2' }} className="glass-card">
-            <h3 style={{ fontSize: '1.375rem', fontWeight: '700', color: '#0f172a', marginBottom: '1.5rem' }}>
-                Transaction History
-            </h3>
-            {appointments.filter(a => a.paymentStatus === 'completed').slice(0, 6).map((appt, i) => (
-                <div key={appt._id || i} className="card" style={{
+            {/* Table Card */}
+            <div className="glass-card">
+                <div style={{
                     display: 'flex',
                     justifyContent: 'space-between',
                     alignItems: 'center',
-                    padding: '1.25rem',
-                    marginBottom: '0.875rem'
+                    marginBottom: '2rem'
                 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{
-                            width: '48px',
-                            height: '48px',
-                            background: '#dbeafe',
-                            borderRadius: '12px',
+                    <div>
+                        <h3 style={{ fontSize: '1.5rem', fontWeight: '700', color: '#0f172a', marginBottom: '0.5rem' }}>
+                            📋 Inventory Management
+                        </h3>
+                        <p style={{ color: '#64748b' }}>Track and manage medical supplies</p>
+                    </div>
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                        <button
+                            onClick={handleRefresh}
+                            disabled={isRefreshing}
+                            style={{
+                                padding: '0.75rem 1.5rem',
+                                background: '#f1f5f9',
+                                color: '#0891b2',
+                                border: '2px solid #e2e8f0',
+                                borderRadius: '10px',
+                                fontWeight: '700',
+                                cursor: isRefreshing ? 'not-allowed' : 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem',
+                                transition: 'all 0.3s ease',
+                                opacity: isRefreshing ? 0.6 : 1
+                            }}
+                            onMouseOver={(e) => {
+                                if (!isRefreshing) {
+                                    e.target.style.background = '#e0f2fe';
+                                    e.target.style.borderColor = '#0891b2';
+                                }
+                            }}
+                            onMouseOut={(e) => {
+                                if (!isRefreshing) {
+                                    e.target.style.background = '#f1f5f9';
+                                    e.target.style.borderColor = '#e2e8f0';
+                                }
+                            }}
+                        >
+                            🔄 {isRefreshing ? 'Refreshing...' : 'Refresh'}
+                        </button>
+                        <button className="btn btn-primary" onClick={onAdd} style={{
+                            padding: '0.75rem 1.5rem',
+                            background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                            color: 'white',
+                            border: 'none',
+                            borderRadius: '10px',
+                            fontWeight: '700',
+                            cursor: 'pointer',
                             display: 'flex',
                             alignItems: 'center',
-                            justifyContent: 'center',
-                            color: '#0891b2',
-                            fontSize: '1.25rem'
+                            gap: '0.5rem'
                         }}>
-                            <FaMoneyBillWave />
-                        </div>
-                        <div>
-                            <p style={{ fontWeight: '600', color: '#0f172a', marginBottom: '0.25rem' }}>Consultation Fee</p>
-                            <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
-                                TRX-{889920 + i} • {appt.doctorId?.userId?.name || 'Doctor'}
-                            </p>
-                        </div>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                        <p style={{ fontWeight: '700', color: '#10b981', marginBottom: '0.375rem', fontSize: '1.125rem' }}>
-                            +${appt.paymentAmount || 50}
-                        </p>
-                        <button style={{
-                            background: 'none',
-                            border: 'none',
-                            color: '#0891b2',
-                            fontSize: '0.75rem',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            textDecoration: 'underline'
-                        }}>
-                            Download
+                            <FaPlus /> Add Item
                         </button>
                     </div>
                 </div>
-            ))}
-        </div>
 
-        <div className="glass-card" style={{
-            background: 'linear-gradient(135deg, #0891b2, #06b6d4)',
-            color: 'white',
-            position: 'relative',
-            overflow: 'hidden'
-        }}>
-            <div style={{
-                position: 'absolute',
-                top: '-50px',
-                right: '-50px',
-                width: '200px',
-                height: '200px',
-                background: 'rgba(255,255,255,0.1)',
-                borderRadius: '50%',
-                filter: 'blur(40px)'
-            }}></div>
+                <div style={{ overflowX: 'auto' }}>
+                    <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.5rem' }}>
+                        <thead>
+                            <tr>
+                                <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    Item Name
+                                </th>
+                                <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    Category
+                                </th>
+                                <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    Stock
+                                </th>
+                                <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    Price
+                                </th>
+                                <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    Value
+                                </th>
+                                <th style={{ padding: '1rem', textAlign: 'right', fontSize: '0.75rem', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                                    Actions
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {inventory.length > 0 ? (
+                                inventory.map((item) => {
+                                    const stockLevel = item.stockQuantity > 50 ? 'high' : item.stockQuantity > 20 ? 'medium' : 'low';
+                                    const colors = { high: '#10b981', medium: '#f59e0b', low: '#ef4444' };
+                                    const itemValue = item.stockQuantity * item.unitPrice;
 
-            <div style={{ position: 'relative', zIndex: 1 }}>
-                <p style={{ opacity: 0.9, fontSize: '0.9375rem', marginBottom: '0.75rem', fontWeight: '500' }}>Total Balance</p>
-                <h2 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '2rem', letterSpacing: '-0.02em' }}>
-                    ${(stats.revenue).toLocaleString()}
-                </h2>
-                <div style={{ display: 'flex', gap: '0.875rem' }}>
-                    <button style={{
-                        flex: 1,
-                        padding: '0.875rem',
-                        background: 'rgba(255,255,255,0.2)',
-                        backdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255,255,255,0.3)',
-                        borderRadius: '12px',
-                        color: 'white',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                    }}>
-                        Withdraw
-                    </button>
-                    <button style={{
-                        flex: 1,
-                        padding: '0.875rem',
-                        background: 'rgba(255,255,255,0.2)',
-                        backdropFilter: 'blur(10px)',
-                        border: '1px solid rgba(255,255,255,0.3)',
-                        borderRadius: '12px',
-                        color: 'white',
-                        fontWeight: '600',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s'
-                    }}>
-                        Reports
-                    </button>
+                                    return (
+                                        <tr key={item._id} className="card" style={{ background: 'white' }}>
+                                            <td style={{ padding: '1.25rem 1rem', fontWeight: '600', color: '#0f172a', borderRadius: '12px 0 0 12px' }}>
+                                                {item.itemName}
+                                            </td>
+                                            <td style={{ padding: '1.25rem 1rem', color: '#64748b' }}>
+                                                <span style={{
+                                                    padding: '0.375rem 0.75rem',
+                                                    background: '#f1f5f9',
+                                                    borderRadius: '8px',
+                                                    fontSize: '0.875rem',
+                                                    fontWeight: '500'
+                                                }}>
+                                                    {item.category}
+                                                </span>
+                                            </td>
+                                            <td style={{ padding: '1.25rem 1rem' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                                    <span style={{ fontWeight: '600', color: '#0f172a', minWidth: '40px' }}>{item.stockQuantity}</span>
+                                                    <div style={{
+                                                        width: '100px',
+                                                        height: '8px',
+                                                        background: '#f1f5f9',
+                                                        borderRadius: '4px',
+                                                        overflow: 'hidden'
+                                                    }}>
+                                                        <div style={{
+                                                            width: `${Math.min((item.stockQuantity / 100) * 100, 100)}%`,
+                                                            height: '100%',
+                                                            background: colors[stockLevel],
+                                                            borderRadius: '4px',
+                                                            transition: 'width 0.3s'
+                                                        }}></div>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td style={{ padding: '1.25rem 1rem', fontFamily: 'monospace', fontWeight: '600', color: '#0f172a' }}>
+                                                ${item.unitPrice}
+                                            </td>
+                                            <td style={{ padding: '1.25rem 1rem', fontWeight: '600', color: '#3b82f6' }}>
+                                                ${itemValue.toFixed(2)}
+                                            </td>
+                                            <td style={{ padding: '1.25rem 1rem', textAlign: 'right', borderRadius: '0 12px 12px 0' }}>
+                                                <button
+                                                    onClick={() => onEdit(item)}
+                                                    style={{
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        color: '#0891b2',
+                                                        fontWeight: '600',
+                                                        fontSize: '0.875rem',
+                                                        cursor: 'pointer',
+                                                        marginRight: '1rem',
+                                                        transition: 'color 0.2s'
+                                                    }}
+                                                    onMouseOver={(e) => e.target.style.color = '#0369a1'}
+                                                    onMouseOut={(e) => e.target.style.color = '#0891b2'}
+                                                >
+                                                    <FaEdit /> Edit
+                                                </button>
+                                                <button
+                                                    onClick={() => onDelete(item._id)}
+                                                    style={{
+                                                        background: 'none',
+                                                        border: 'none',
+                                                        color: '#ef4444',
+                                                        fontWeight: '600',
+                                                        fontSize: '0.875rem',
+                                                        cursor: 'pointer',
+                                                        transition: 'color 0.2s'
+                                                    }}
+                                                    onMouseOver={(e) => e.target.style.color = '#dc2626'}
+                                                    onMouseOut={(e) => e.target.style.color = '#ef4444'}
+                                                >
+                                                    <FaTrash />
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    );
+                                })
+                            ) : (
+                                <tr>
+                                    <td colSpan="6" style={{ padding: '2rem', textAlign: 'center', color: '#94a3b8' }}>
+                                        <p style={{ fontSize: '1.125rem', fontWeight: '600' }}>No inventory items yet</p>
+                                        <p style={{ fontSize: '0.875rem', marginTop: '0.5rem' }}>Click "Add Item" to add your first medical supply</p>
+                                    </td>
+                                </tr>
+                            )}
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-    </div>
-);
+    );
+};
 
 // Doctors Team Section
 const DoctorsTeam = ({ doctors, onRefresh }) => {
     const [showModal, setShowModal] = useState(false);
+    const [showSpecModal, setShowSpecModal] = useState(false);
+    const [specializations, setSpecializations] = useState([
+        "Cardiologist", "Dermatologist", "Neurologist", "Pediatrician",
+        "Orthopedic", "Gynecologist", "Ophthalmologist", "Psychiatrist",
+        "ENT Specialist", "General Physician", "Dentist", "Surgeon",
+        "Radiologist", "Anesthesiologist", "Pulmonologist", "Gastroenterologist"
+    ]);
+    const [newSpec, setNewSpec] = useState("");
     const [formData, setFormData] = useState({
         name: '',
         email: '',
@@ -802,6 +1191,18 @@ const DoctorsTeam = ({ doctors, onRefresh }) => {
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
+    };
+
+    const handleAddSpecialization = (e) => {
+        e.preventDefault();
+        if (newSpec.trim() && !specializations.includes(newSpec.trim())) {
+            setSpecializations([...specializations, newSpec.trim()].sort());
+            setNewSpec("");
+            setShowSpecModal(false);
+            toast.success("Specialization added successfully!");
+        } else if (specializations.includes(newSpec.trim())) {
+            toast.error("Specialization already exists");
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -864,9 +1265,29 @@ const DoctorsTeam = ({ doctors, onRefresh }) => {
                         </h3>
                         <p style={{ color: '#64748b' }}>Manage doctor profiles and credentials</p>
                     </div>
-                    <button className="btn btn-primary" onClick={() => setShowModal(true)}>
-                        <FaPlus /> Add Doctor
-                    </button>
+                    <div style={{ display: 'flex', gap: '1rem' }}>
+                        <button
+                            className="btn"
+                            onClick={() => setShowSpecModal(true)}
+                            style={{
+                                background: '#f1f5f9',
+                                color: '#475569',
+                                border: '1px solid #e2e8f0',
+                                padding: '0.75rem 1.5rem',
+                                borderRadius: '10px',
+                                fontWeight: '600',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '0.5rem'
+                            }}
+                        >
+                            <FaPlus /> Add Specialization
+                        </button>
+                        <button className="btn btn-primary" onClick={() => setShowModal(true)}>
+                            <FaPlus /> Add Doctor
+                        </button>
+                    </div>
                 </div>
 
                 <div style={{
@@ -927,12 +1348,64 @@ const DoctorsTeam = ({ doctors, onRefresh }) => {
                 </div>
             </div>
 
+            {/* Add Specialization Modal */}
+            {showSpecModal && (
+                <div style={{
+                    position: 'fixed',
+                    inset: 0,
+                    background: 'rgba(0, 0, 0, 0.5)',
+                    backdropFilter: 'blur(8px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 1100, // Higher than regular modal
+                    animation: 'fadeIn 0.2s ease-out'
+                }} onClick={() => setShowSpecModal(false)}>
+                    <div
+                        className="glass-card"
+                        style={{
+                            maxWidth: '400px',
+                            width: '90%',
+                            padding: '2rem',
+                            animation: 'slideUp 0.3s ease-out'
+                        }}
+                        onClick={(e) => e.stopPropagation()}
+                    >
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                            <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#0f172a' }}>
+                                Doctor Specialization
+                            </h3>
+                            <button onClick={() => setShowSpecModal(false)} style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#64748b' }}>×</button>
+                        </div>
+                        <form onSubmit={handleAddSpecialization}>
+                            <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#0f172a', marginBottom: '0.5rem' }}>
+                                New Specialization Name
+                            </label>
+                            <input
+                                type="text"
+                                value={newSpec}
+                                onChange={(e) => setNewSpec(e.target.value)}
+                                className="input"
+                                placeholder="e.g. Immunologist"
+                                required
+                                autoFocus
+                                style={{ marginBottom: '1.5rem' }}
+                            />
+                            <div style={{ display: 'flex', gap: '1rem' }}>
+                                <button type="button" onClick={() => setShowSpecModal(false)} style={{ flex: 1, padding: '0.75rem', border: '1px solid #e2e8f0', borderRadius: '8px', background: 'white', cursor: 'pointer' }}>Cancel</button>
+                                <button type="submit" className="btn btn-primary" style={{ flex: 1, padding: '0.75rem' }}>Add Option</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             {/* Add Doctor Modal */}
             {showModal && (
                 <div style={{
                     position: 'fixed',
                     inset: 0,
-                    background: 'rgba(0, 0, 0, 0.5)',
+                    background: 'rgba(15, 23, 42, 0.6)',
                     backdropFilter: 'blur(8px)',
                     display: 'flex',
                     alignItems: 'center',
@@ -943,201 +1416,251 @@ const DoctorsTeam = ({ doctors, onRefresh }) => {
                     <div
                         className="glass-card"
                         style={{
-                            maxWidth: '600px',
-                            width: '90%',
+                            maxWidth: '650px',
+                            width: '95%',
                             maxHeight: '90vh',
                             overflowY: 'auto',
-                            padding: '2.5rem',
-                            animation: 'slideUp 0.3s ease-out'
+                            padding: '0',
+                            animation: 'slideUp 0.3s ease-out',
+                            borderRadius: '24px',
+                            border: '1px solid rgba(255, 255, 255, 0.8)',
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)'
                         }}
                         onClick={(e) => e.stopPropagation()}
                     >
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '2rem' }}>
+                        {/* Modal Header */}
+                        <div style={{ 
+                            padding: '2rem 2.5rem', 
+                            borderBottom: '1px solid #f1f5f9',
+                            display: 'flex', 
+                            justifyContent: 'space-between', 
+                            alignItems: 'center',
+                            background: 'white'
+                        }}>
                             <div>
-                                <h3 style={{ fontSize: '1.75rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.5rem' }}>
+                                <h3 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.25rem' }}>
                                     Add New Doctor
                                 </h3>
-                                <p style={{ color: '#64748b' }}>Fill in the doctor's details below</p>
+                                <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>Enter the doctor's details to create a new profile.</p>
                             </div>
                             <button
                                 onClick={() => setShowModal(false)}
                                 style={{
-                                    background: '#fef2f2',
-                                    border: 'none',
-                                    width: '40px',
-                                    height: '40px',
+                                    background: '#f8fafc',
+                                    border: '1px solid #e2e8f0',
+                                    width: '36px',
+                                    height: '36px',
                                     borderRadius: '10px',
-                                    color: '#dc2626',
+                                    color: '#64748b',
                                     fontSize: '1.25rem',
                                     cursor: 'pointer',
-                                    fontWeight: '700'
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.2s'
+                                }}
+                                onMouseOver={(e) => {
+                                    e.currentTarget.style.background = '#fef2f2';
+                                    e.currentTarget.style.color = '#ef4444';
+                                    e.currentTarget.style.borderColor = '#fee2e2';
+                                }}
+                                onMouseOut={(e) => {
+                                    e.currentTarget.style.background = '#f8fafc';
+                                    e.currentTarget.style.color = '#64748b';
+                                    e.currentTarget.style.borderColor = '#e2e8f0';
                                 }}
                             >
                                 ×
                             </button>
                         </div>
 
-                        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
-                            <div>
-                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#0f172a', marginBottom: '0.5rem' }}>
-                                    Full Name *
-                                </label>
-                                <input
-                                    type="text"
-                                    name="name"
-                                    value={formData.name}
-                                    onChange={handleChange}
-                                    className="input"
-                                    placeholder="Dr. John Smith"
-                                    required
-                                    style={{ marginBottom: 0 }}
-                                />
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#0f172a', marginBottom: '0.5rem' }}>
-                                        Email *
-                                    </label>
-                                    <input
-                                        type="email"
-                                        name="email"
-                                        value={formData.email}
-                                        onChange={handleChange}
-                                        className="input"
-                                        placeholder="doctor@hospital.com"
-                                        required
-                                        style={{ marginBottom: 0 }}
-                                    />
+                        {/* Modal Body */}
+                        <div style={{ padding: '2.5rem' }}>
+                            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                                {/* Personal Info Section */}
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.5rem' }}>
+                                            Full Name
+                                        </label>
+                                        <div style={{ position: 'relative' }}>
+                                            <input
+                                                type="text"
+                                                name="name"
+                                                value={formData.name}
+                                                onChange={handleChange}
+                                                className="input"
+                                                placeholder="Dr. John Smith"
+                                                required
+                                                style={{ marginBottom: 0, paddingLeft: '2.75rem' }}
+                                            />
+                                            <FaUserMd style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                                        </div>
+                                    </div>
+                                    
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.5rem' }}>
+                                            Email Address
+                                        </label>
+                                        <div style={{ position: 'relative' }}>
+                                            <input
+                                                type="email"
+                                                name="email"
+                                                value={formData.email}
+                                                onChange={handleChange}
+                                                className="input"
+                                                placeholder="doctor@hospital.com"
+                                                required
+                                                style={{ marginBottom: 0, paddingLeft: '2.75rem' }}
+                                            />
+                                            <FaUsers style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#0f172a', marginBottom: '0.5rem' }}>
-                                        Phone
-                                    </label>
-                                    <input
-                                        type="tel"
-                                        name="phone"
-                                        value={formData.phone}
-                                        onChange={handleChange}
-                                        className="input"
-                                        placeholder="+1 234 567 8900"
-                                        style={{ marginBottom: 0 }}
-                                    />
-                                </div>
-                            </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.5rem' }}>
+                                            Specialization
+                                        </label>
+                                        <div style={{ position: 'relative' }}>
+                                            <select
+                                                name="specialization"
+                                                value={formData.specialization}
+                                                onChange={handleChange}
+                                                className="input"
+                                                required
+                                                style={{
+                                                    marginBottom: 0,
+                                                    paddingLeft: '2.75rem',
+                                                    cursor: 'pointer',
+                                                    appearance: 'none',
+                                                    backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%2364748b\' d=\'M6 9L1 4h10z\'/%3E%3C/svg%3E")',
+                                                    backgroundRepeat: 'no-repeat',
+                                                    backgroundPosition: 'right 1rem center'
+                                                }}
+                                            >
+                                                <option value="" disabled>Select Specialization</option>
+                                                {specializations.map(spec => (
+                                                    <option key={spec} value={spec}>{spec}</option>
+                                                ))}
+                                            </select>
+                                            <FaStethoscope style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                                        </div>
+                                    </div>
 
-                            <div>
-                                <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#0f172a', marginBottom: '0.5rem' }}>
-                                    Specialization *
-                                </label>
-                                <select
-                                    name="specialization"
-                                    value={formData.specialization}
-                                    onChange={handleChange}
-                                    className="input"
-                                    required
-                                    style={{
-                                        marginBottom: 0,
-                                        cursor: 'pointer',
-                                        appearance: 'none',
-                                        backgroundImage: 'url("data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'12\' height=\'12\' viewBox=\'0 0 12 12\'%3E%3Cpath fill=\'%2364748b\' d=\'M6 9L1 4h10z\'/%3E%3C/svg%3E")',
-                                        backgroundRepeat: 'no-repeat',
-                                        backgroundPosition: 'right 1rem center',
-                                        paddingRight: '3rem'
-                                    }}
-                                >
-                                    <option value="" disabled>Select a specialization</option>
-                                    <option value="Cardiologist">Cardiologist</option>
-                                    <option value="Dermatologist">Dermatologist</option>
-                                    <option value="Neurologist">Neurologist</option>
-                                    <option value="Pediatrician">Pediatrician</option>
-                                    <option value="Orthopedic">Orthopedic</option>
-                                    <option value="Gynecologist">Gynecologist</option>
-                                    <option value="Ophthalmologist">Ophthalmologist</option>
-                                    <option value="Psychiatrist">Psychiatrist</option>
-                                    <option value="ENT Specialist">ENT Specialist</option>
-                                    <option value="General Physician">General Physician</option>
-                                    <option value="Dentist">Dentist</option>
-                                    <option value="Surgeon">Surgeon</option>
-                                    <option value="Radiologist">Radiologist</option>
-                                    <option value="Anesthesiologist">Anesthesiologist</option>
-                                    <option value="Pulmonologist">Pulmonologist</option>
-                                    <option value="Gastroenterologist">Gastroenterologist</option>
-                                </select>
-                            </div>
-
-                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#0f172a', marginBottom: '0.5rem' }}>
-                                        Experience (years) *
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="experience"
-                                        value={formData.experience}
-                                        onChange={handleChange}
-                                        className="input"
-                                        placeholder="10"
-                                        min="0"
-                                        required
-                                        style={{ marginBottom: 0 }}
-                                    />
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.5rem' }}>
+                                            Phone Number
+                                        </label>
+                                        <div style={{ position: 'relative' }}>
+                                            <input
+                                                type="tel"
+                                                name="phone"
+                                                value={formData.phone}
+                                                onChange={handleChange}
+                                                className="input"
+                                                placeholder="+1 234 567 8900"
+                                                style={{ marginBottom: 0, paddingLeft: '2.75rem' }}
+                                            />
+                                            <FaCalendarAlt style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                                        </div>
+                                    </div>
                                 </div>
 
-                                <div>
-                                    <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#0f172a', marginBottom: '0.5rem' }}>
-                                        Consultation Fee ($) *
-                                    </label>
-                                    <input
-                                        type="number"
-                                        name="feesPerConsultation"
-                                        value={formData.feesPerConsultation}
-                                        onChange={handleChange}
-                                        className="input"
-                                        placeholder="50"
-                                        min="0"
-                                        required
-                                        style={{ marginBottom: 0 }}
-                                    />
-                                </div>
-                            </div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.5rem' }}>
+                                            Experience (Years)
+                                        </label>
+                                        <div style={{ position: 'relative' }}>
+                                            <input
+                                                type="number"
+                                                name="experience"
+                                                value={formData.experience}
+                                                onChange={handleChange}
+                                                className="input"
+                                                placeholder="e.g. 8"
+                                                min="0"
+                                                required
+                                                style={{ marginBottom: 0, paddingLeft: '2.75rem' }}
+                                            />
+                                            <FaChartPie style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                                        </div>
+                                    </div>
 
-                            <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>
-                                <button
-                                    type="button"
-                                    onClick={() => setShowModal(false)}
-                                    style={{
-                                        flex: 1,
-                                        padding: '1rem',
-                                        background: 'white',
-                                        border: '2px solid #e5e7eb',
-                                        borderRadius: '12px',
-                                        color: '#64748b',
-                                        fontWeight: '600',
-                                        cursor: 'pointer',
-                                        fontSize: '1rem'
-                                    }}
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className="btn btn-primary"
-                                    style={{
-                                        flex: 1,
-                                        padding: '1rem',
-                                        fontSize: '1rem',
-                                        opacity: submitting ? 0.7 : 1
-                                    }}
-                                >
-                                    {submitting ? 'Adding...' : 'Add Doctor'} {!submitting && <FaPlus />}
-                                </button>
-                            </div>
-                        </form>
+                                    <div>
+                                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#334155', marginBottom: '0.5rem' }}>
+                                            Consultation Fee
+                                        </label>
+                                        <div style={{ position: 'relative' }}>
+                                            <input
+                                                type="number"
+                                                name="feesPerConsultation"
+                                                value={formData.feesPerConsultation}
+                                                onChange={handleChange}
+                                                className="input"
+                                                placeholder="e.g. 50"
+                                                min="0"
+                                                required
+                                                style={{ marginBottom: 0, paddingLeft: '2.75rem' }}
+                                            />
+                                            <FaMoneyBillWave style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style={{ display: 'flex', gap: '1rem', marginTop: '1.5rem', paddingTop: '1.5rem', borderTop: '1px solid #f1f5f9' }}>
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowModal(false)}
+                                        style={{
+                                            flex: 1,
+                                            padding: '1rem',
+                                            background: 'white',
+                                            border: '1px solid #e2e8f0',
+                                            borderRadius: '12px',
+                                            color: '#64748b',
+                                            fontWeight: '600',
+                                            cursor: 'pointer',
+                                            fontSize: '1rem',
+                                            transition: 'all 0.2s',
+                                            boxShadow: '0 1px 2px rgba(0,0,0,0.05)'
+                                        }}
+                                        onMouseOver={(e) => {
+                                            e.currentTarget.style.borderColor = '#cbd5e1';
+                                            e.currentTarget.style.background = '#f8fafc';
+                                        }}
+                                        onMouseOut={(e) => {
+                                            e.currentTarget.style.borderColor = '#e2e8f0';
+                                            e.currentTarget.style.background = 'white';
+                                        }}
+                                    >
+                                        Cancel
+                                    </button>
+                                    <button
+                                        type="submit"
+                                        disabled={submitting}
+                                        className="btn btn-primary"
+                                        style={{
+                                            flex: 1,
+                                            padding: '1rem',
+                                            fontSize: '1rem',
+                                            opacity: submitting ? 0.7 : 1,
+                                            display: 'flex',
+                                            justifyContent: 'center',
+                                            alignItems: 'center',
+                                            gap: '0.5rem',
+                                            background: 'linear-gradient(135deg, #0f172a 0%, #334155 100%)',
+                                            boxShadow: '0 4px 12px rgba(15, 23, 42, 0.2)'
+                                        }}
+                                    >
+                                        {submitting ? 'Creating Profile...' : 'Add Doctor'} {!submitting && <FaPlus />}
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
                     </div>
-
                     <style>{`
                         @keyframes fadeIn {
                             from { opacity: 0; }
@@ -1146,11 +1669,11 @@ const DoctorsTeam = ({ doctors, onRefresh }) => {
                         @keyframes slideUp {
                             from {
                                 opacity: 0;
-                                transform: translateY(20px);
+                                transform: translateY(20px) scale(0.95);
                             }
                             to {
                                 opacity: 1;
-                                transform: translateY(0);
+                                transform: translateY(0) scale(1);
                             }
                         }
                     `}</style>
@@ -1219,5 +1742,331 @@ const WhatsAppConfig = () => (
         </div>
     </div>
 );
+
+// Appointments Tab Component
+const AppointmentsTab = ({ appointments, onRefresh }) => {
+    const [filterStatus, setFilterStatus] = React.useState('all');
+    const [searchTerm, setSearchTerm] = React.useState('');
+    const [updating, setUpdating] = React.useState(null);
+    const [lastUpdateTime, setLastUpdateTime] = React.useState(null);
+
+    // Auto-refresh when appointments data changes
+    React.useEffect(() => {
+        console.log('📊 Appointments data updated:', appointments.length, 'appointments');
+        setLastUpdateTime(new Date().toLocaleTimeString());
+    }, [appointments]);
+
+    // Auto-refresh every 5 seconds
+    React.useEffect(() => {
+        const interval = setInterval(() => {
+            console.log('🔄 Auto-refreshing appointments...');
+            onRefresh();
+        }, 5000);
+        return () => clearInterval(interval);
+    }, [onRefresh]);
+
+    const filteredAppointments = appointments.filter(appt => {
+        const matchesStatus = filterStatus === 'all' || appt.status?.toLowerCase() === filterStatus.toLowerCase();
+        const matchesSearch = !searchTerm ||
+            appt.patientId?.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            appt.doctorId?.userId?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+        return matchesStatus && matchesSearch;
+    });
+
+    const statusOptions = ['Pending', 'Confirmed', 'Ongoing', 'Completed', 'Cancelled'];
+
+    const getStatusColor = (status) => {
+        const statusLower = status?.toLowerCase();
+        if (statusLower === 'ongoing') return { bg: '#cffafe', text: '#164e63', border: '#a5f3fc' };
+        if (statusLower === 'confirmed') return { bg: '#d1fae5', text: '#065f46', border: '#a7f3d0' };
+        if (statusLower === 'completed') return { bg: '#dbeafe', text: '#1e40af', border: '#bfdbfe' };
+        if (statusLower === 'pending') return { bg: '#fef3c7', text: '#92400e', border: '#fde68a' };
+        if (statusLower === 'cancelled') return { bg: '#fee2e2', text: '#991b1b', border: '#fecaca' };
+        return { bg: '#e0e7ff', text: '#3730a3', border: '#c7d2fe' };
+    };
+
+    const handleStatusUpdate = async (apptId, newStatus) => {
+        setUpdating(apptId);
+        try {
+            await axios.put(`${API_URL}/appointments/${apptId}`, { status: newStatus });
+            console.log('✅ Status updated to:', newStatus);
+            toast.success(`Status updated to ${newStatus}! ✅`);
+            // Immediate refresh without delay
+            onRefresh();
+        } catch (error) {
+            console.error('Error updating status:', error);
+            toast.error('Failed to update status');
+        }
+        setUpdating(null);
+    };
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+            {/* Header with Search and Filter */}
+            <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                gap: '1rem',
+                flexWrap: 'wrap'
+            }}>
+                <div style={{
+                    flex: 1,
+                    minWidth: '250px',
+                    position: 'relative'
+                }}>
+                    <input
+                        type="text"
+                        placeholder="Search by patient or doctor name..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{
+                            width: '100%',
+                            padding: '0.75rem 1rem 0.75rem 2.5rem',
+                            border: '2px solid #e2e8f0',
+                            borderRadius: '12px',
+                            fontSize: '0.9375rem',
+                            outline: 'none',
+                            transition: 'all 0.2s'
+                        }}
+                        onFocus={(e) => e.target.style.borderColor = '#0891b2'}
+                        onBlur={(e) => e.target.style.borderColor = '#e2e8f0'}
+                    />
+                    <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }}>
+                        🔍
+                    </span>
+                </div>
+
+                <select
+                    value={filterStatus}
+                    onChange={(e) => setFilterStatus(e.target.value)}
+                    style={{
+                        padding: '0.75rem 1rem',
+                        border: '2px solid #e2e8f0',
+                        borderRadius: '12px',
+                        fontSize: '0.9375rem',
+                        outline: 'none',
+                        cursor: 'pointer',
+                        background: 'white'
+                    }}
+                >
+                    <option value="all">All Status</option>
+                    <option value="pending">Pending</option>
+                    <option value="confirmed">Confirmed</option>
+                    <option value="ongoing">Ongoing</option>
+                    <option value="completed">Completed</option>
+                    <option value="cancelled">Cancelled</option>
+                </select>
+
+                <button
+                    onClick={onRefresh}
+                    style={{
+                        padding: '0.75rem 1.5rem',
+                        background: 'linear-gradient(135deg, #0891b2, #06b6d4)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '12px',
+                        fontWeight: '600',
+                        cursor: 'pointer',
+                        fontSize: '0.9375rem'
+                    }}
+                >
+                    Refresh
+                </button>
+            </div>
+
+            {/* Appointments List */}
+            {filteredAppointments.length === 0 ? (
+                <div style={{
+                    textAlign: 'center',
+                    padding: '3rem 2rem',
+                    background: '#f8fafc',
+                    borderRadius: '16px',
+                    border: '2px dashed #cbd5e1',
+                    color: '#64748b'
+                }}>
+                    <div style={{ fontSize: '2.5rem', marginBottom: '1rem' }}>📭</div>
+                    <p style={{ fontSize: '1.0625rem', fontWeight: '600', marginBottom: '0.5rem' }}>No appointments found</p>
+                    <p style={{ fontSize: '0.9375rem' }}>Try adjusting your filters or search terms</p>
+                </div>
+            ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {filteredAppointments.map((appt, idx) => {
+                        const colors = getStatusColor(appt.status);
+                        const appointmentDate = new Date(appt.date);
+                        const isUpcoming = appointmentDate > new Date();
+
+                        return (
+                            <div
+                                key={appt._id || idx}
+                                style={{
+                                    background: 'white',
+                                    borderRadius: '16px',
+                                    padding: '1.5rem',
+                                    border: '2px solid #e2e8f0',
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    gap: '1.5rem',
+                                    flexWrap: 'wrap',
+                                    transition: 'all 0.2s',
+                                    boxShadow: '0 1px 3px rgba(0, 0, 0, 0.05)',
+                                    borderLeft: `4px solid ${isUpcoming ? '#0891b2' : '#94a3b8'}`
+                                }}
+                                onMouseEnter={(e) => e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.1)'}
+                                onMouseLeave={(e) => e.currentTarget.style.boxShadow = '0 1px 3px rgba(0, 0, 0, 0.05)'}
+                            >
+                                {/* Patient Info */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, minWidth: '200px' }}>
+                                    <div style={{
+                                        width: '52px',
+                                        height: '52px',
+                                        background: 'linear-gradient(135deg, #0891b2, #06b6d4)',
+                                        borderRadius: '14px',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: 'white',
+                                        fontWeight: '700',
+                                        fontSize: '1.25rem',
+                                        boxShadow: '0 4px 14px rgba(8, 145, 178, 0.3)'
+                                    }}>
+                                        {(appt.patientId?.name || 'P')[0]}
+                                    </div>
+                                    <div>
+                                        <p style={{ fontWeight: '700', color: '#0f172a', marginBottom: '0.25rem', fontSize: '1rem' }}>
+                                            {appt.patientId?.name || 'Unknown Patient'}
+                                        </p>
+                                        <p style={{ fontSize: '0.875rem', color: '#64748b' }}>
+                                            Patient ID: {appt.patientId?._id?.substring(0, 8) || 'N/A'}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Doctor & Time Info */}
+                                <div style={{
+                                    display: 'flex',
+                                    gap: '1.5rem',
+                                    alignItems: 'center',
+                                    flex: 1,
+                                    minWidth: '250px',
+                                    padding: '0 1rem',
+                                    borderLeft: '2px solid #f1f5f9',
+                                    borderRight: '2px solid #f1f5f9'
+                                }}>
+                                    <div>
+                                        <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
+                                            Doctor
+                                        </p>
+                                        <p style={{ fontWeight: '600', color: '#0f172a', fontSize: '0.9375rem' }}>
+                                            {appt.doctorId?.userId?.name || 'Unknown Doctor'}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
+                                            Time
+                                        </p>
+                                        <p style={{ fontWeight: '600', color: '#0f172a', fontSize: '0.9375rem' }}>
+                                            {appt.timeSlot || 'N/A'}
+                                        </p>
+                                    </div>
+                                    <div>
+                                        <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '700', marginBottom: '0.25rem', textTransform: 'uppercase' }}>
+                                            Date
+                                        </p>
+                                        <p style={{ fontWeight: '600', color: '#0f172a', fontSize: '0.9375rem' }}>
+                                            {appointmentDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Status Dropdown Update */}
+                                <div style={{
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '0.5rem',
+                                    minWidth: '150px'
+                                }}>
+                                    <select
+                                        value={appt.status || 'Pending'}
+                                        onChange={(e) => handleStatusUpdate(appt._id, e.target.value)}
+                                        disabled={updating === appt._id}
+                                        style={{
+                                            padding: '0.625rem 0.875rem',
+                                            border: `2px solid ${colors.border}`,
+                                            background: colors.bg,
+                                            color: colors.text,
+                                            borderRadius: '10px',
+                                            fontWeight: '700',
+                                            cursor: updating === appt._id ? 'not-allowed' : 'pointer',
+                                            fontSize: '0.875rem',
+                                            textTransform: 'capitalize',
+                                            transition: 'all 0.2s',
+                                            opacity: updating === appt._id ? 0.6 : 1
+                                        }}
+                                    >
+                                        {statusOptions.map(status => (
+                                            <option key={status} value={status}>{status}</option>
+                                        ))}
+                                    </select>
+                                    {updating === appt._id && (
+                                        <p style={{ fontSize: '0.75rem', color: '#0891b2', fontWeight: '600', margin: '0', textAlign: 'center' }}>
+                                            Updating...
+                                        </p>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            )}
+
+            {/* Summary Stats */}
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '1rem',
+                marginTop: '2rem',
+                padding: '1.5rem',
+                background: 'linear-gradient(135deg, #f0fdf4, #ecfdf5)',
+                borderRadius: '16px',
+                border: '2px solid #bbf7d0'
+            }}>
+                <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: '0.875rem', color: '#059669', fontWeight: '700', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                        Total Appointments
+                    </p>
+                    <p style={{ fontSize: '2rem', fontWeight: '800', color: '#065f46' }}>
+                        {appointments.length}
+                    </p>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: '0.875rem', color: '#059669', fontWeight: '700', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                        Pending
+                    </p>
+                    <p style={{ fontSize: '2rem', fontWeight: '800', color: '#065f46' }}>
+                        {appointments.filter(a => a.status?.toLowerCase() === 'pending').length}
+                    </p>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: '0.875rem', color: '#059669', fontWeight: '700', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                        Ongoing
+                    </p>
+                    <p style={{ fontSize: '2rem', fontWeight: '800', color: '#065f46' }}>
+                        {appointments.filter(a => a.status?.toLowerCase() === 'ongoing').length}
+                    </p>
+                </div>
+                <div style={{ textAlign: 'center' }}>
+                    <p style={{ fontSize: '0.875rem', color: '#059669', fontWeight: '700', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
+                        Completed
+                    </p>
+                    <p style={{ fontSize: '2rem', fontWeight: '800', color: '#065f46' }}>
+                        {appointments.filter(a => a.status?.toLowerCase() === 'completed').length}
+                    </p>
+                </div>
+            </div>
+        </div>
+    );
+};
 
 export default AdminDashboard;

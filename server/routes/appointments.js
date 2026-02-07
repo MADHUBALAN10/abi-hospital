@@ -7,12 +7,27 @@ router.post('/', async (req, res) => {
     try {
         const { patientId, doctorId, date, timeSlot } = req.body;
 
+        console.log('📝 Booking Request:', { patientId, doctorId, date, timeSlot });
+
         // Validate required fields
         if (!patientId || !doctorId || !date || !timeSlot) {
+            console.warn('⚠️ Missing required fields:', { patientId, doctorId, date, timeSlot });
             return res.status(400).json({
                 error: 'Missing required fields',
-                required: ['patientId', 'doctorId', 'date', 'timeSlot']
+                required: ['patientId', 'doctorId', 'date', 'timeSlot'],
+                received: { patientId, doctorId, date, timeSlot }
             });
+        }
+
+        // Validate if patientId and doctorId are valid MongoDB ObjectIds
+        const mongoose = require('mongoose');
+        if (!mongoose.Types.ObjectId.isValid(patientId)) {
+            console.warn('⚠️ Invalid patientId format:', patientId);
+            return res.status(400).json({ error: 'Invalid patient ID format' });
+        }
+        if (!mongoose.Types.ObjectId.isValid(doctorId)) {
+            console.warn('⚠️ Invalid doctorId format:', doctorId);
+            return res.status(400).json({ error: 'Invalid doctor ID format' });
         }
 
         const newAppt = new Appointment({
@@ -26,6 +41,8 @@ router.post('/', async (req, res) => {
 
         await newAppt.save();
 
+        console.log('✅ Appointment created:', newAppt._id);
+
         // Populate for response
         const populatedAppt = await Appointment.findById(newAppt._id)
             .populate('patientId', 'name email')
@@ -36,8 +53,12 @@ router.post('/', async (req, res) => {
 
         res.status(201).json(populatedAppt);
     } catch (err) {
-        console.error('Error creating appointment:', err);
-        res.status(500).json({ error: err.message });
+        console.error('❌ Error creating appointment:', err.message);
+        console.error('Stack:', err.stack);
+        res.status(500).json({ 
+            error: err.message,
+            details: err.errors ? Object.keys(err.errors).map(key => err.errors[key].message) : 'Unknown error'
+        });
     }
 });
 

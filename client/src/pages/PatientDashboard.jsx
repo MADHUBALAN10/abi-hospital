@@ -20,14 +20,18 @@ const PatientDashboard = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterSpecialty, setFilterSpecialty] = useState('all');
     const [user, setUser] = useState(null);
+    const [selectedAppointmentDetails, setSelectedAppointmentDetails] = useState(null);
+    const [showDetailsModal, setShowDetailsModal] = useState(false);
     const navigate = useNavigate();
 
     // Auto-fix user data on load - RUNS ONLY ONCE
     useEffect(() => {
         const generateValidObjectId = () => {
+            // Generate a valid 24-character MongoDB ObjectId
             const timestamp = Math.floor(Date.now() / 1000).toString(16).padStart(8, '0');
             const randomHex = () => Math.floor(Math.random() * 16777215).toString(16).padStart(6, '0');
-            return timestamp + randomHex() + randomHex() + randomHex().substring(0, 2);
+            const id = timestamp + randomHex() + randomHex() + randomHex();
+            return id.substring(0, 24);
         };
 
         const validateAndFixUser = () => {
@@ -178,7 +182,8 @@ const PatientDashboard = () => {
 
         } catch (error) {
             console.error('Booking error:', error);
-            toast.error('Failed to book appointment. Please try again.');
+            const errorMessage = error.response?.data?.error || error.message || 'Failed to book appointment. Please try again.';
+            toast.error(`❌ ${errorMessage}`);
         }
         setLoading(false);
     };
@@ -973,31 +978,34 @@ const PatientDashboard = () => {
                                         borderRadius: '16px',
                                         padding: '2rem',
                                         border: '2px solid #e2e8f0',
-                                        opacity: 0.8
+                                        opacity: 0.8,
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
                                     }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
-                                                <div style={{
-                                                    width: '60px',
-                                                    height: '60px',
-                                                    background: '#cbd5e1',
-                                                    borderRadius: '14px',
-                                                    display: 'flex',
-                                                    alignItems: 'center',
-                                                    justifyContent: 'center',
-                                                    fontSize: '1.25rem'
-                                                }}>
-                                                    👨‍⚕️
-                                                </div>
-                                                <div>
-                                                    <p style={{ fontWeight: '800', fontSize: '1.125rem', color: '#475569', marginBottom: '0.5rem' }}>
-                                                        {appt.doctorId?.userId?.name || 'Doctor'}
-                                                    </p>
-                                                    <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
-                                                        {new Date(appt.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} • {appt.timeSlot}
-                                                    </p>
-                                                </div>
+                                        <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', flex: 1 }}>
+                                            <div style={{
+                                                width: '60px',
+                                                height: '60px',
+                                                background: '#cbd5e1',
+                                                borderRadius: '14px',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                fontSize: '1.25rem'
+                                            }}>
+                                                👨‍⚕️
                                             </div>
+                                            <div>
+                                                <p style={{ fontWeight: '800', fontSize: '1.125rem', color: '#475569', marginBottom: '0.5rem' }}>
+                                                    {appt.doctorId?.userId?.name || 'Doctor'}
+                                                </p>
+                                                <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
+                                                    {new Date(appt.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} • {appt.timeSlot}
+                                                </p>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
                                             <span style={{
                                                 padding: '0.75rem 1.25rem',
                                                 background: appt.status === 'Completed' ? '#d1fae5' : '#fee2e2',
@@ -1008,6 +1016,35 @@ const PatientDashboard = () => {
                                             }}>
                                                 {appt.status}
                                             </span>
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedAppointmentDetails(appt);
+                                                    setShowDetailsModal(true);
+                                                }}
+                                                style={{
+                                                    padding: '0.75rem 1.5rem',
+                                                    background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '10px',
+                                                    fontWeight: '700',
+                                                    fontSize: '0.9375rem',
+                                                    cursor: 'pointer',
+                                                    whiteSpace: 'nowrap',
+                                                    transition: 'all 0.3s ease',
+                                                    boxShadow: '0 4px 15px rgba(102, 126, 234, 0.4)'
+                                                }}
+                                                onMouseOver={(e) => {
+                                                    e.target.style.transform = 'translateY(-2px)';
+                                                    e.target.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.6)';
+                                                }}
+                                                onMouseOut={(e) => {
+                                                    e.target.style.transform = 'translateY(0)';
+                                                    e.target.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
+                                                }}
+                                            >
+                                                👁️ View Details
+                                            </button>
                                         </div>
                                     </div>
                                 ))}
@@ -1287,6 +1324,271 @@ const PatientDashboard = () => {
                             }
                         }
                     `}</style>
+                </div>
+            )}
+
+            {/* Appointment Details Modal */}
+            {showDetailsModal && selectedAppointmentDetails && (
+                <div style={{
+                    position: 'fixed',
+                    inset: 0,
+                    background: 'rgba(0, 0, 0, 0.6)',
+                    backdropFilter: 'blur(12px)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    zIndex: 9998,
+                    animation: 'fadeIn 0.3s ease-out'
+                }}>
+                    <div style={{
+                        background: 'white',
+                        borderRadius: '24px',
+                        padding: '2.5rem',
+                        maxWidth: '600px',
+                        width: '90%',
+                        maxHeight: '90vh',
+                        overflowY: 'auto',
+                        boxShadow: '0 25px 50px rgba(0, 0, 0, 0.25)',
+                        animation: 'slideUp 0.4s ease-out'
+                    }}>
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setShowDetailsModal(false)}
+                            style={{
+                                position: 'absolute',
+                                top: '1.5rem',
+                                right: '1.5rem',
+                                background: '#f1f5f9',
+                                border: 'none',
+                                width: '44px',
+                                height: '44px',
+                                borderRadius: '12px',
+                                fontSize: '1.5rem',
+                                cursor: 'pointer',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                transition: 'all 0.3s ease'
+                            }}
+                            onMouseOver={(e) => {
+                                e.target.style.background = '#e2e8f0';
+                                e.target.style.transform = 'rotate(90deg)';
+                            }}
+                            onMouseOut={(e) => {
+                                e.target.style.background = '#f1f5f9';
+                                e.target.style.transform = 'rotate(0deg)';
+                            }}
+                        >
+                            ✕
+                        </button>
+
+                        {/* Header */}
+                        <h2 style={{
+                            fontSize: '2rem',
+                            fontWeight: '800',
+                            color: '#1e293b',
+                            marginBottom: '2rem',
+                            background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            backgroundClip: 'text'
+                        }}>
+                            📋 Appointment Details
+                        </h2>
+
+                        {/* Doctor Card */}
+                        <div style={{
+                            padding: '1.5rem',
+                            background: 'linear-gradient(135deg, #f0f9ff, #e0f2fe)',
+                            borderRadius: '16px',
+                            border: '2px solid #bae6fd',
+                            marginBottom: '2rem'
+                        }}>
+                            <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center', marginBottom: '1.5rem' }}>
+                                <div style={{
+                                    width: '80px',
+                                    height: '80px',
+                                    background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                                    borderRadius: '16px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'white',
+                                    fontSize: '2rem'
+                                }}>
+                                    👨‍⚕️
+                                </div>
+                                <div>
+                                    <p style={{ fontSize: '1.5rem', fontWeight: '800', color: '#0369a1', marginBottom: '0.5rem' }}>
+                                        {selectedAppointmentDetails.doctorId?.userId?.name || 'Doctor'}
+                                    </p>
+                                    <p style={{ color: '#0284c7', fontSize: '1rem', fontWeight: '600' }}>
+                                        {selectedAppointmentDetails.doctorId?.specialization || 'Specialist'}
+                                    </p>
+                                </div>
+                            </div>
+                            
+                            <div style={{
+                                display: 'grid',
+                                gridTemplateColumns: '1fr 1fr',
+                                gap: '1rem',
+                                paddingTop: '1.5rem',
+                                borderTop: '2px solid #bae6fd'
+                            }}>
+                                <div>
+                                    <p style={{ color: '#64748b', fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                                        📅 Date
+                                    </p>
+                                    <p style={{ color: '#1e293b', fontSize: '1rem', fontWeight: '800' }}>
+                                        {new Date(selectedAppointmentDetails.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                    </p>
+                                </div>
+                                <div>
+                                    <p style={{ color: '#64748b', fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.5rem' }}>
+                                        🕐 Time
+                                    </p>
+                                    <p style={{ color: '#1e293b', fontSize: '1rem', fontWeight: '800' }}>
+                                        {selectedAppointmentDetails.timeSlot}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Status Badge */}
+                        <div style={{ marginBottom: '2rem' }}>
+                            <p style={{ color: '#64748b', fontSize: '0.875rem', fontWeight: '600', marginBottom: '0.75rem' }}>
+                                📊 Status
+                            </p>
+                            <span style={{
+                                display: 'inline-block',
+                                padding: '0.75rem 1.5rem',
+                                background: '#d1fae5',
+                                color: '#065f46',
+                                borderRadius: '12px',
+                                fontWeight: '800',
+                                fontSize: '1rem'
+                            }}>
+                                ✓ {selectedAppointmentDetails.status}
+                            </span>
+                        </div>
+
+                        {/* Doctor's Diagnosis */}
+                        {selectedAppointmentDetails.diagnosis && (
+                            <div style={{
+                                padding: '1.5rem',
+                                background: '#fef3c7',
+                                borderRadius: '16px',
+                                border: '2px solid #fcd34d',
+                                marginBottom: '1.5rem'
+                            }}>
+                                <p style={{ color: '#b45309', fontSize: '0.875rem', fontWeight: '700', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+                                    🔍 Diagnosis
+                                </p>
+                                <p style={{
+                                    color: '#78350f',
+                                    fontSize: '1rem',
+                                    lineHeight: '1.6',
+                                    fontWeight: '500'
+                                }}>
+                                    {selectedAppointmentDetails.diagnosis}
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Doctor's Prescription */}
+                        {selectedAppointmentDetails.prescription && (
+                            <div style={{
+                                padding: '1.5rem',
+                                background: '#dbeafe',
+                                borderRadius: '16px',
+                                border: '2px solid #93c5fd',
+                                marginBottom: '1.5rem'
+                            }}>
+                                <p style={{ color: '#1e40af', fontSize: '0.875rem', fontWeight: '700', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+                                    💊 Prescription
+                                </p>
+                                <div style={{
+                                    color: '#1e3a8a',
+                                    fontSize: '1rem',
+                                    lineHeight: '1.8',
+                                    fontWeight: '500',
+                                    whiteSpace: 'pre-wrap',
+                                    wordBreak: 'break-word'
+                                }}>
+                                    {selectedAppointmentDetails.prescription}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Doctor's Notes/Suggestions */}
+                        {selectedAppointmentDetails.notes && (
+                            <div style={{
+                                padding: '1.5rem',
+                                background: '#f3e8ff',
+                                borderRadius: '16px',
+                                border: '2px solid #d8b4fe',
+                                marginBottom: '1.5rem'
+                            }}>
+                                <p style={{ color: '#6b21a8', fontSize: '0.875rem', fontWeight: '700', marginBottom: '0.75rem', textTransform: 'uppercase' }}>
+                                    💡 Doctor's Suggestions
+                                </p>
+                                <div style={{
+                                    color: '#4c1d95',
+                                    fontSize: '1rem',
+                                    lineHeight: '1.8',
+                                    fontWeight: '500',
+                                    whiteSpace: 'pre-wrap',
+                                    wordBreak: 'break-word'
+                                }}>
+                                    {selectedAppointmentDetails.notes}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* No Details Available */}
+                        {!selectedAppointmentDetails.diagnosis && !selectedAppointmentDetails.prescription && !selectedAppointmentDetails.notes && (
+                            <div style={{
+                                padding: '2rem',
+                                textAlign: 'center',
+                                background: '#f1f5f9',
+                                borderRadius: '16px',
+                                marginBottom: '1.5rem'
+                            }}>
+                                <p style={{ fontSize: '3rem', marginBottom: '1rem' }}>📋</p>
+                                <p style={{ color: '#64748b', fontWeight: '600', fontSize: '1rem' }}>
+                                    No detailed notes available for this appointment yet.
+                                </p>
+                            </div>
+                        )}
+
+                        {/* Close Button */}
+                        <button
+                            onClick={() => setShowDetailsModal(false)}
+                            style={{
+                                width: '100%',
+                                padding: '1.25rem',
+                                background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                                color: 'white',
+                                border: 'none',
+                                borderRadius: '14px',
+                                fontWeight: '800',
+                                fontSize: '1.0625rem',
+                                cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                boxShadow: '0 10px 30px rgba(102, 126, 234, 0.4)'
+                            }}
+                            onMouseOver={(e) => {
+                                e.target.style.transform = 'translateY(-3px)';
+                                e.target.style.boxShadow = '0 15px 40px rgba(102, 126, 234, 0.6)';
+                            }}
+                            onMouseOut={(e) => {
+                                e.target.style.transform = 'translateY(0)';
+                                e.target.style.boxShadow = '0 10px 30px rgba(102, 126, 234, 0.4)';
+                            }}
+                        >
+                            Close Details
+                        </button>
+                    </div>
                 </div>
             )}
         </div>
