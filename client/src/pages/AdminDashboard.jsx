@@ -162,6 +162,17 @@ const AdminDashboard = () => {
         }
     };
 
+    const handleStatusUpdate = async (appointmentId, newStatus) => {
+        try {
+            await axios.put(`${API_URL}/appointments/${appointmentId}`, { status: newStatus });
+            toast.success(`Status updated to ${newStatus}`);
+            fetchData();
+        } catch (error) {
+            console.error('Error updating status:', error);
+            toast.error('Failed to update status');
+        }
+    };
+
     return (
         <div style={{ display: 'flex', minHeight: '100vh', background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)' }}>
             {/* Sidebar */}
@@ -184,25 +195,40 @@ const AdminDashboard = () => {
                     borderBottom: '2px solid #f1f5f9'
                 }}>
                     <div style={{
-                        width: '44px',
-                        height: '44px',
-                        background: 'linear-gradient(135deg, #0891b2, #06b6d4)',
-                        borderRadius: '12px',
+                        width: '46px',
+                        height: '46px',
                         display: 'flex',
                         alignItems: 'center',
-                        justifyContent: 'center',
-                        color: 'white',
-                        fontWeight: '800',
-                        fontSize: '1.25rem',
-                        boxShadow: '0 4px 14px rgba(8, 145, 178, 0.3)'
+                        justifyContent: 'center'
                     }}>
-                        A
+                        <svg width="46" height="46" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <polygon points="50,5 50,52 24,52" fill="#4b5563" />
+                            <polygon points="50,5 76,52 50,52" fill="#f59e0b" />
+                            <polygon points="5,82 43,82 24,50" fill="#f59e0b" />
+                            <polygon points="95,82 57,82 76,50" fill="#4b5563" />
+                            <circle cx="50" cy="58" r="20" fill="white" />
+                            <line x1="50" y1="36" x2="50" y2="78" stroke="#4b5563" strokeWidth="4" strokeLinecap="round" />
+                            <path d="M 50 42 Q 32 30 18 45 Q 32 50 48 42" fill="#4b5563" />
+                            <path d="M 50 42 Q 68 30 82 45 Q 68 50 52 42" fill="#4b5563" />
+                            <path d="M 43 50 Q 50 43 57 50 T 43 60 T 57 70" fill="none" stroke="#4b5563" strokeWidth="3" />
+                            <circle cx="40" cy="30" r="3" stroke="white" strokeWidth="1.5" />
+                            <line x1="40" y1="33" x2="40" y2="39" stroke="white" strokeWidth="1.5" />
+                            <line x1="37" y1="36" x2="43" y2="36" stroke="white" strokeWidth="1.5" />
+                            <path d="M 60 25 L 60 20 L 56 20 L 56 16 L 60 16 L 60 11 L 64 11 L 64 16 L 68 16 L 68 20 L 64 20 L 64 25 Z" fill="white" transform="scale(0.6) translate(40, 16)" />
+                            <circle cx="21" cy="68" r="4.5" stroke="white" strokeWidth="2.5" />
+                            <path d="M 21 68 L 21 60 L 28 60" fill="none" stroke="white" strokeWidth="2.5" />
+                            <circle cx="72" cy="62" r="2.5" fill="white" />
+                            <circle cx="80" cy="62" r="2.5" fill="white" />
+                            <path d="M 69 66 L 75 66 L 75 75 L 69 75 Z" fill="white" stroke="#4b5563" strokeWidth="1" />
+                            <path d="M 77 66 L 83 66 L 83 75 L 77 75 Z" fill="white" stroke="#4b5563" strokeWidth="1" />
+                        </svg>
                     </div>
                     <div>
-                        <span style={{ fontSize: '1.25rem', fontWeight: '700', color: '#0f172a', display: 'block', lineHeight: 1 }}>
-                            Admin<span style={{ color: '#0891b2' }}>Panel</span>
+                        <span style={{ fontSize: '1.05rem', fontWeight: '900', color: '#0f172a', display: 'flex', gap: '3px', lineHeight: 1 }}>
+                            <span style={{ color: '#f59e0b' }}>ABHI</span> 
+                            <span style={{ color: '#4b5563' }}>SK HOSPITAL</span>
                         </span>
-                        <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '500' }}>MediCare+</span>
+                        <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '500', display: 'block', marginTop: '3px' }}>Admin Panel</span>
                     </div>
                 </div>
 
@@ -389,7 +415,7 @@ const AdminDashboard = () => {
                     </div>
                 ) : (
                     <>
-                        {activeTab === 'overview' && <Overview stats={stats} appointments={appointments} />}
+                        {activeTab === 'overview' && <Overview stats={stats} appointments={appointments} onStatusUpdate={handleStatusUpdate} />}
                         {activeTab === 'appointments' && <AppointmentsTab appointments={appointments} onRefresh={fetchData} />}
                         {activeTab === 'stock' && <MedicalStock inventory={inventory} onAdd={() => handleOpenInventoryModal()} onEdit={handleOpenInventoryModal} onDelete={handleDeleteInventory} />}
                         {activeTab === 'payments' && <Payments appointments={appointments} stats={stats} />}
@@ -730,7 +756,7 @@ const NavItem = ({ icon, label, active, onClick, badge, count }) => (
 );
 
 // Overview Section
-const Overview = ({ stats, appointments }) => (
+const Overview = ({ stats, appointments, onStatusUpdate }) => (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
         {/* Stats Grid */}
         <div style={{
@@ -821,15 +847,30 @@ const Overview = ({ stats, appointments }) => (
                                 </p>
                             </div>
                         </div>
-                        <span className="badge" style={{
-                            background: appt.status === 'confirmed' ? '#d1fae5' : '#fef3c7',
-                            color: appt.status === 'confirmed' ? '#065f46' : '#92400e',
-                            border: `1px solid ${appt.status === 'confirmed' ? '#a7f3d0' : '#fde68a'}`,
-                            fontWeight: '600',
-                            textTransform: 'capitalize'
-                        }}>
-                            {appt.status}
-                        </span>
+                        <select
+                            value={appt.status.toLowerCase()}
+                            onChange={(e) => onStatusUpdate(appt._id, e.target.value)}
+                            style={{
+                                padding: '0.375rem 2rem 0.375rem 1rem',
+                                background: appt.status.toLowerCase() === 'approved' ? '#d1fae5' : '#fef3c7',
+                                color: appt.status.toLowerCase() === 'approved' ? '#065f46' : '#92400e',
+                                border: `1px solid ${appt.status.toLowerCase() === 'approved' ? '#a7f3d0' : '#fde68a'}`,
+                                borderRadius: '20px',
+                                fontWeight: '600',
+                                fontSize: '0.875rem',
+                                cursor: 'pointer',
+                                appearance: 'none',
+                                outline: 'none',
+                                textTransform: 'capitalize',
+                                backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23${appt.status.toLowerCase() === 'approved' ? '065f46' : '92400e'}' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                                backgroundRepeat: 'no-repeat',
+                                backgroundPosition: 'right 0.5rem center',
+                                backgroundSize: '1em'
+                            }}
+                        >
+                            <option value="pending">Pending</option>
+                            <option value="approved">Approved</option>
+                        </select>
                     </div>
                 ))}
             </div>
@@ -1773,15 +1814,12 @@ const AppointmentsTab = ({ appointments, onRefresh }) => {
         return matchesStatus && matchesSearch;
     });
 
-    const statusOptions = ['Pending', 'Confirmed', 'Ongoing', 'Completed', 'Cancelled'];
+    const statusOptions = ['Pending', 'Approved'];
 
     const getStatusColor = (status) => {
         const statusLower = status?.toLowerCase();
-        if (statusLower === 'ongoing') return { bg: '#cffafe', text: '#164e63', border: '#a5f3fc' };
-        if (statusLower === 'confirmed') return { bg: '#d1fae5', text: '#065f46', border: '#a7f3d0' };
-        if (statusLower === 'completed') return { bg: '#dbeafe', text: '#1e40af', border: '#bfdbfe' };
+        if (statusLower === 'approved') return { bg: '#d1fae5', text: '#065f46', border: '#a7f3d0' };
         if (statusLower === 'pending') return { bg: '#fef3c7', text: '#92400e', border: '#fde68a' };
-        if (statusLower === 'cancelled') return { bg: '#fee2e2', text: '#991b1b', border: '#fecaca' };
         return { bg: '#e0e7ff', text: '#3730a3', border: '#c7d2fe' };
     };
 
@@ -2050,10 +2088,10 @@ const AppointmentsTab = ({ appointments, onRefresh }) => {
                 </div>
                 <div style={{ textAlign: 'center' }}>
                     <p style={{ fontSize: '0.875rem', color: '#059669', fontWeight: '700', marginBottom: '0.5rem', textTransform: 'uppercase' }}>
-                        Ongoing
+                        Approved
                     </p>
                     <p style={{ fontSize: '2rem', fontWeight: '800', color: '#065f46' }}>
-                        {appointments.filter(a => a.status?.toLowerCase() === 'ongoing').length}
+                        {appointments.filter(a => a.status?.toLowerCase() === 'approved').length}
                     </p>
                 </div>
                 <div style={{ textAlign: 'center' }}>

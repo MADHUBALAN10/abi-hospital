@@ -159,7 +159,7 @@ const Login = () => {
                             marginBottom: '1rem',
                             lineHeight: '1.2'
                         }}>
-                            MediCare+<br />Admin Portal.
+                            ABHI SK HOSPITAL<br />Admin Portal.
                         </h2>
 
                         <p style={{

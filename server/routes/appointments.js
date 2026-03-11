@@ -5,9 +5,9 @@ const Appointment = require('../models/Appointment');
 // Book Appointment
 router.post('/', async (req, res) => {
     try {
-        const { patientId, doctorId, date, timeSlot } = req.body;
+        const { patientId, doctorId, date, timeSlot, paymentId, paymentAmount, paymentStatus } = req.body;
 
-        console.log('📝 Booking Request:', { patientId, doctorId, date, timeSlot });
+        console.log('📝 Booking Request:', { patientId, doctorId, date, timeSlot, paymentId, paymentStatus });
 
         // Validate required fields
         if (!patientId || !doctorId || !date || !timeSlot) {
@@ -36,7 +36,9 @@ router.post('/', async (req, res) => {
             date,
             timeSlot,
             status: 'Pending',
-            paymentStatus: 'Pending'
+            paymentStatus: paymentStatus || 'Pending',
+            paymentAmount: paymentAmount || 0,
+            paymentId: paymentId || '',
         });
 
         await newAppt.save();
@@ -55,7 +57,7 @@ router.post('/', async (req, res) => {
     } catch (err) {
         console.error('❌ Error creating appointment:', err.message);
         console.error('Stack:', err.stack);
-        res.status(500).json({ 
+        res.status(500).json({
             error: err.message,
             details: err.errors ? Object.keys(err.errors).map(key => err.errors[key].message) : 'Unknown error'
         });
@@ -96,16 +98,21 @@ router.get('/', async (req, res) => {
     }
 });
 
-// Update Status (e.g. Cancel, Confirm)
+// Update Status + Reschedule (date / timeSlot)
 router.put('/:id', async (req, res) => {
     try {
-        const { status, paymentStatus, diagnosis, prescription } = req.body;
+        const { status, paymentStatus, diagnosis, prescription, date, timeSlot } = req.body;
 
         const updateData = {};
         if (status) updateData.status = status;
         if (paymentStatus) updateData.paymentStatus = paymentStatus;
         if (diagnosis) updateData.diagnosis = diagnosis;
         if (prescription) updateData.prescription = prescription;
+        if (date) updateData.date = date;
+        if (timeSlot) updateData.timeSlot = timeSlot;
+
+        // If rescheduled, reset status to Pending
+        if (date || timeSlot) updateData.status = 'Pending';
 
         const updated = await Appointment.findByIdAndUpdate(
             req.params.id,

@@ -52,6 +52,7 @@ const doctorRoutes = require('./routes/doctors');
 const appointmentRoutes = require('./routes/appointments');
 const inventoryRoutes = require('./routes/inventory');
 const nurseRoutes = require('./routes/nurses');
+const paymentRoutes = require('./routes/payment');
 
 // Routes (Mounting)
 app.use('/api/auth', authRoutes);
@@ -59,6 +60,7 @@ app.use('/api/doctors', doctorRoutes);
 app.use('/api/appointments', appointmentRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/nurses', nurseRoutes);
+app.use('/api/payment', paymentRoutes);
 
 // 404 Handler
 app.use((req, res) => {

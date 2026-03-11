@@ -165,11 +165,42 @@ const AdminDashboard = () => {
             {/* ── Sidebar ────────────────────────────────────── */}
             <aside className="admin-sidebar">
                 {/* Logo */}
-                <div className="admin-logo">
-                    <div className="admin-logo-icon">A</div>
+                <div className="admin-logo" style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                    <div style={{
+                        width: '46px',
+                        height: '46px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center'
+                    }}>
+                        <svg width="46" height="46" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
+                            <polygon points="50,5 50,52 24,52" fill="#4b5563" />
+                            <polygon points="50,5 76,52 50,52" fill="#f59e0b" />
+                            <polygon points="5,82 43,82 24,50" fill="#f59e0b" />
+                            <polygon points="95,82 57,82 76,50" fill="#4b5563" />
+                            <circle cx="50" cy="58" r="20" fill="white" />
+                            <line x1="50" y1="36" x2="50" y2="78" stroke="#4b5563" strokeWidth="4" strokeLinecap="round" />
+                            <path d="M 50 42 Q 32 30 18 45 Q 32 50 48 42" fill="#4b5563" />
+                            <path d="M 50 42 Q 68 30 82 45 Q 68 50 52 42" fill="#4b5563" />
+                            <path d="M 43 50 Q 50 43 57 50 T 43 60 T 57 70" fill="none" stroke="#4b5563" strokeWidth="3" />
+                            <circle cx="40" cy="30" r="3" stroke="white" strokeWidth="1.5" />
+                            <line x1="40" y1="33" x2="40" y2="39" stroke="white" strokeWidth="1.5" />
+                            <line x1="37" y1="36" x2="43" y2="36" stroke="white" strokeWidth="1.5" />
+                            <path d="M 60 25 L 60 20 L 56 20 L 56 16 L 60 16 L 60 11 L 64 11 L 64 16 L 68 16 L 68 20 L 64 20 L 64 25 Z" fill="white" transform="scale(0.6) translate(40, 16)" />
+                            <circle cx="21" cy="68" r="4.5" stroke="white" strokeWidth="2.5" />
+                            <path d="M 21 68 L 21 60 L 28 60" fill="none" stroke="white" strokeWidth="2.5" />
+                            <circle cx="72" cy="62" r="2.5" fill="white" />
+                            <circle cx="80" cy="62" r="2.5" fill="white" />
+                            <path d="M 69 66 L 75 66 L 75 75 L 69 75 Z" fill="white" stroke="#4b5563" strokeWidth="1" />
+                            <path d="M 77 66 L 83 66 L 83 75 L 77 75 Z" fill="white" stroke="#4b5563" strokeWidth="1" />
+                        </svg>
+                    </div>
                     <div>
-                        <span className="admin-logo-text">Admin<span>Panel</span></span>
-                        <span className="admin-logo-sub">MediCare+</span>
+                        <span style={{ fontSize: '1.05rem', fontWeight: '900', color: '#0f172a', display: 'flex', gap: '3px', lineHeight: 1 }}>
+                            <span style={{ color: '#f59e0b' }}>ABHI</span> 
+                            <span style={{ color: '#4b5563' }}>SK HOSPITAL</span>
+                        </span>
+                        <span className="admin-logo-sub" style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '500', display: 'block', marginTop: '3px' }}>Admin Panel</span>
                     </div>
                 </div>
 
