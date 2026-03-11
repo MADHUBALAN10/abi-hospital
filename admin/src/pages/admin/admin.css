@@ -1,4 +1,4 @@
-﻿/* ============================================================
+/* ============================================================
    Admin Panel — Dedicated Styles
    ============================================================ */
 
@@ -1429,90 +1429,90 @@
     box-shadow: 0 6px 20px rgba(124, 58, 237, 0.35) !important;
 }
 
-/* ── Responsive ─────────────────────────────────────────── */
+/* ── Responsive Mobile ──────────────────────────────────── */
 @media (max-width: 950px) {
     .admin-layout {
-        flex-direction: column;
+        flex-direction: column !important;
     }
 
     .admin-sidebar {
-        width: 100%;
-        height: auto;
-        padding: 1rem;
-        flex-direction: row;
-        overflow-x: auto;
-        border-right: none;
-        border-bottom: 2px solid #e2e8f0;
-        position: sticky;
-        top: 0;
-        z-index: 50;
-        align-items: center;
+        width: 100% !important;
+        height: auto !important;
+        padding: 1rem !important;
+        flex-direction: row !important;
+        overflow-x: auto !important;
+        border-right: none !important;
+        border-bottom: 2px solid #e2e8f0 !important;
+        position: sticky !important;
+        top: 0 !important;
+        z-index: 50 !important;
+        align-items: center !important;
     }
 
     .admin-logo {
-        margin-bottom: 0;
-        padding-bottom: 0;
-        border-bottom: none;
-        margin-right: 1rem;
+        margin-bottom: 0 !important;
+        padding-bottom: 0 !important;
+        border-bottom: none !important;
+        margin-right: 1rem !important;
+        flex-shrink: 0 !important;
     }
 
     .admin-logo-text, .admin-logo-sub {
-        display: none;
+        display: none !important;
     }
 
     .admin-nav {
-        flex-direction: row;
-        overflow-x: auto;
-        align-items: center;
-        gap: 0.5rem;
-        margin: 0;
-        flex: 1;
+        flex-direction: row !important;
+        overflow-x: auto !important;
+        align-items: center !important;
+        gap: 0.5rem !important;
+        margin: 0 !important;
+        flex: 1 !important;
     }
 
     .admin-nav-item {
-        padding: 0.5rem 0.75rem;
-        width: auto;
+        padding: 0.5rem 0.75rem !important;
+        width: auto !important;
+        flex-shrink: 0 !important;
     }
 
     .admin-nav-item .nav-label {
-        display: none;
+        display: none !important;
     }
 
     .admin-nav-section {
-        display: none;
+        display: none !important;
     }
 
     .admin-logout-btn {
-        margin-top: 0;
-        padding: 0.5rem 0.75rem;
-        margin-left: 0.5rem;
-        width: auto;
+        margin-top: 0 !important;
+        padding: 0.5rem 0.75rem !important;
+        margin-left: 0.5rem !important;
+        width: auto !important;
+        flex-shrink: 0 !important;
+        font-size: 0 !important; /* Hide text, keep icon */
     }
 
-    .admin-logout-btn span,
-    .admin-logout-btn text {
-        display: block; /* The icon remains */
+    .admin-logout-btn svg {
+        font-size: 1.25rem !important;
     }
 
-    /* Target the text in the logout button by finding the text node or adjusting JSX, 
-       but standard approach is hiding the text node. We can hide the text via font-size trick or if we change JSX */
-       
     .admin-main {
-        padding: 1rem;
+        padding: 1rem !important;
     }
 
     .admin-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 1rem;
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 1rem !important;
     }
 
     .admin-table {
-        min-width: 600px;
+        min-width: 600px !important;
     }
 
-    .admin-table-wrapper {
-        overflow-x: auto;
-        max-width: 100vw;
+    .table-responsive {
+        overflow-x: auto !important;
+        max-width: 100vw !important;
     }
 }
