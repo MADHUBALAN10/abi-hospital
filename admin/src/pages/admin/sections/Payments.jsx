@@ -90,7 +90,7 @@ const generateInvoicePDF = (appt, invoiceNo) => {
 
       <div class="divider"></div>
 
-      <table>
+      <div className="table-responsive"><table>
         <thead>
           <tr>
             <th>#</th>
@@ -114,7 +114,7 @@ const generateInvoicePDF = (appt, invoiceNo) => {
             <td style="text-align:right; color:#0891b2; font-size:18px;">₹${amount.toLocaleString('en-IN')}</td>
           </tr>
         </tbody>
-      </table>
+      </table></div>
 
       <div style="margin-top:24px; display:flex; justify-content:space-between; align-items:center; background:#f8fafc; border-radius:12px; padding:16px 20px; border:1px solid #e2e8f0;">
         <div>
@@ -253,7 +253,7 @@ const Payments = ({ appointments, stats }) => {
                     </div>
                 ) : (
                     <div style={{ overflowX: 'auto' }}>
-                        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                        <div className="table-responsive"><table style={{ width: '100%', borderCollapse: 'collapse' }}>
                             <thead>
                                 <tr style={{ background: '#f8fafc', borderRadius: 10 }}>
                                     {['Invoice', 'Patient', 'Doctor', 'Date & Time', 'Amount', 'Status', 'Action'].map((h) => (
@@ -347,7 +347,7 @@ const Payments = ({ appointments, stats }) => {
                                     );
                                 })}
                             </tbody>
-                        </table>
+                        </table></div>
                     </div>
                 )}
             </div>

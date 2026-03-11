@@ -301,7 +301,7 @@ const MedicalStock = ({ inventory, doctors = [], onAdd, onEdit, onDelete }) => {
 
                 {/* Table */}
                 <div style={{ overflowX: 'auto' }}>
-                    <table className="admin-table">
+                    <div className="table-responsive"><table className="admin-table">
                         <thead>
                             <tr>
                                 <th>Item Name</th>
@@ -390,7 +390,7 @@ const MedicalStock = ({ inventory, doctors = [], onAdd, onEdit, onDelete }) => {
                                 );
                             })}
                         </tbody>
-                    </table>
+                    </table></div>
                 </div>
             </div>
 

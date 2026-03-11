@@ -174,9 +174,9 @@ const AdminDashboard = () => {
     };
 
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)' }}>
+        <div className="dashboard-wrapper" style={{ display: 'flex', minHeight: '100vh', background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)' }}>
             {/* Sidebar */}
-            <aside style={{
+            <aside className="dashboard-sidebar" style={{
                 width: '280px',
                 background: 'white',
                 borderRight: '1px solid rgba(226, 232, 240, 0.8)',
@@ -1083,7 +1083,7 @@ const MedicalStock = ({ inventory, onAdd, onEdit, onDelete }) => {
                 </div>
 
                 <div style={{ overflowX: 'auto' }}>
-                    <table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.5rem' }}>
+                    <div className="table-responsive"><table style={{ width: '100%', borderCollapse: 'separate', borderSpacing: '0 0.5rem' }}>
                         <thead>
                             <tr>
                                 <th style={{ padding: '1rem', textAlign: 'left', fontSize: '0.75rem', fontWeight: '800', color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -1202,7 +1202,7 @@ const MedicalStock = ({ inventory, onAdd, onEdit, onDelete }) => {
                                 </tr>
                             )}
                         </tbody>
-                    </table>
+                    </table></div>
                 </div>
             </div>
         </div>

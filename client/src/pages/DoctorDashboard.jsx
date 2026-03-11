@@ -114,9 +114,9 @@ const DoctorDashboard = () => {
     const avatarColors = ['#0891b2', '#3b82f6', '#8b5cf6', '#10b981', '#f59e0b', '#ec4899'];
 
     return (
-        <div style={{ display: 'flex', minHeight: '100vh', background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)' }}>
+        <div className="dashboard-wrapper" style={{ display: 'flex', minHeight: '100vh', background: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)' }}>
             {/* Sidebar */}
-            <aside style={{
+            <aside className="dashboard-sidebar" style={{
                 width: '300px',
                 background: 'white',
                 borderRight: '1px solid rgba(226, 232, 240, 0.8)',
