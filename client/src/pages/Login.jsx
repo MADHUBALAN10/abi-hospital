@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { FaUser, FaLock, FaHospital, FaArrowRight, FaEnvelope, FaShieldAlt, FaGoogle } from 'react-icons/fa';
 import axios from 'axios';
 
-const API_URL = import.meta.env.MODE === 'development' ? 'http://localhost:4000/api' : 'https://abi-hospital-backend.onrender.com/api';
+const API_URL = import.meta.env.MODE === 'development' ? 'http://localhost:5000/api' : 'https://abi-hospital-backend.onrender.com/api';
 import { useGoogleLogin } from '@react-oauth/google';
 
 const Login = () => {
