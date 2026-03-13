@@ -614,6 +614,7 @@ const Home = () => {
                     {/* Desktop Nav Links - only real sections */}
                     <div className="gem-nav-links">
                         <Link to="/" className="gem-nav-link">Home</Link>
+                        <button className="gem-nav-link" onClick={() => scrollToSection('about-section')}>About</button>
                         <button className="gem-nav-link" onClick={() => scrollToSection('doctors-section')}>Our Doctors</button>
                         <button className="gem-nav-link" onClick={() => scrollToSection('why-us-section')}>Why Us</button>
                         <button className="gem-nav-link" onClick={() => scrollToSection('reviews-section')}>Patient Reviews</button>
@@ -634,6 +635,7 @@ const Home = () => {
                 {/* Mobile Dropdown Menu */}
                 <div className={`gem-mobile-menu ${mobileMenuOpen ? 'open' : ''}`}>
                     <Link to="/" className="gem-mobile-link" onClick={() => setMobileMenuOpen(false)}>Home</Link>
+                    <button className="gem-mobile-link" onClick={() => scrollToSection('about-section')}>About</button>
                     <button className="gem-mobile-link" onClick={() => scrollToSection('doctors-section')}>Our Doctors</button>
                     <button className="gem-mobile-link" onClick={() => scrollToSection('why-us-section')}>Why Us</button>
                     <button className="gem-mobile-link" onClick={() => scrollToSection('reviews-section')}>Patient Reviews</button>
@@ -716,9 +718,17 @@ const Home = () => {
             {/* ── Reviews ── */}
             <div id="reviews-section"><ReviewSlider /></div>
 
-            {/* ── Vision / Mission / Quality Policy ── */}
-            <div className="vmq-wrapper">
-                <div className="vmq-card">
+            {/* ── About & Location Section ── */}
+            <div id="about-section" className="vmq-wrapper" style={{ paddingBottom: '3rem' }}>
+                <div style={{ textAlign: 'center', marginBottom: '3rem' }}>
+                    <div className="ds-label" style={{ background: '#dcfce7', color: '#16a34a' }}>
+                        🏥 About Our Hospital
+                    </div>
+                    <h2 className="ds-heading">Find Us in Gobichettipalayam</h2>
+                    <p className="ds-subtext">Providing world-class healthcare with compassionate care and advanced technology.</p>
+                </div>
+
+                <div className="vmq-card" style={{ marginBottom: '4rem' }}>
                     {/* VISION */}
                     <div className="vmq-item">
                         <svg className="vmq-icon" viewBox="0 0 100 100" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -770,12 +780,25 @@ const Home = () => {
                         </svg>
                         <p className="vmq-title">Quality Policy</p>
                         <p className="vmq-text">
-                            GEM Hospital is committed to providing
+                            ABHI SK Hospital is committed to providing
                             <span> value-added, innovative</span>, and continually improving
                             <span> quality health care services</span> interfaced with
                             <span> futuristic technology</span>.
                         </p>
                     </div>
+                </div>
+
+                {/* Map Section */}
+                <div style={{ maxWidth: '1200px', margin: '0 auto', borderRadius: '24px', overflow: 'hidden', boxShadow: '0 20px 50px rgba(0,0,0,0.1)', border: '4px solid #fff' }}>
+                    <iframe 
+                        src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3910.314837754416!2d77.40990627481555!3d11.457185988735993!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ba93d129c91a2f1%3A0xf8e1475c75f0412d!2sAbhi%20SK%20Hospital%20Pvt%20Ltd!5e0!3m2!1sen!2sin!4v1773311886736!5m2!1sen!2sin" 
+                        width="100%" 
+                        height="450" 
+                        style={{ border: 0, display: 'block' }} 
+                        allowFullScreen="" 
+                        loading="lazy" 
+                        referrerPolicy="no-referrer-when-downgrade"
+                    ></iframe>
                 </div>
             </div>
 
@@ -783,7 +806,7 @@ const Home = () => {
             <section id="why-us-section" className="section" style={{ background: 'rgba(255,255,255,.4)' }}>
                 <div className="container">
                     <div style={{ textAlign: 'center', maxWidth: 700, margin: '0 auto 4rem' }}>
-                        <h2 style={{ marginBottom: '1rem' }}>Why Choose GEM Hospital?</h2>
+                        <h2 style={{ marginBottom: '1rem' }}>Why Choose ABHI SK Hospital?</h2>
                         <p style={{ fontSize: '1.125rem' }}>Advanced technology meets compassionate care.</p>
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '2rem' }}>
@@ -800,7 +823,7 @@ const Home = () => {
                     <div className="glass-card" style={{ textAlign: 'center', padding: '4rem 2rem', background: 'linear-gradient(135deg,rgba(22,163,74,.08),rgba(20,184,166,.08))', maxWidth: 900, margin: '0 auto' }}>
                         <h2 style={{ marginBottom: '1rem', color: '#14532d' }}>Ready to Experience Better Healthcare?</h2>
                         <p style={{ fontSize: '1.125rem', marginBottom: '2rem', maxWidth: 600, margin: '0 auto 2rem' }}>
-                            Join thousands of patients who trust GEM Hospital for advanced laparoscopic & surgical care.
+                            Join thousands of patients who trust ABHI SK Hospital for advanced laparoscopic & surgical care.
                         </p>
                         <Link to="/login" className="gem-btn" style={{ fontSize: '1.125rem', padding: '1rem 2.5rem' }}>
                             Book Appointment Today <FaArrowRight style={{ marginLeft: 8 }} />

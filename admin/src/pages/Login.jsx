@@ -1,14 +1,27 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
-import { FaUser, FaLock, FaHospital, FaArrowRight, FaEnvelope, FaShieldAlt } from 'react-icons/fa';
+import { FaHospital, FaEnvelope, FaLock, FaEye, FaEyeSlash } from 'react-icons/fa';
 import axios from 'axios';
 
 const API_URL = import.meta.env.MODE === 'development' ? 'http://localhost:5000/api' : 'https://abi-hospital-backend.onrender.com/api';
 
+const inputStyle = {
+    width: '100%',
+    padding: '0.875rem 1rem 0.875rem 2.75rem',
+    border: '1.5px solid #d1d5db',
+    borderRadius: '10px',
+    fontSize: '0.9375rem',
+    outline: 'none',
+    background: 'white',
+    color: '#111827',
+    boxSizing: 'border-box',
+    transition: 'border-color 0.2s ease, box-shadow 0.2s ease',
+};
+
 const Login = () => {
-    const [role, setRole] = useState('admin');
-    const [formData, setFormData] = useState({ name: '', email: 'admin@gmail.com', password: 'admin', phone: '' });
+    const [showPassword, setShowPassword] = useState(false);
+    const [formData, setFormData] = useState({ email: 'admin@gmail.com', password: 'admin' });
     const navigate = useNavigate();
 
     const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -16,10 +29,9 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            // Option 1: First try logging into the real backend 
             const res = await axios.post(`${API_URL}/auth/login`, {
                 email: formData.email,
-                password: formData.password
+                password: formData.password,
             });
             const user = res.data;
 
@@ -29,51 +41,18 @@ const Login = () => {
             }
 
             localStorage.setItem('user', JSON.stringify(user));
-            
-            toast.success('Welcome Back!', {
-                duration: 3000,
-                position: 'top-center',
-                style: {
-                    background: 'linear-gradient(135deg, #4f46e5, #7e22ce)',
-                    color: 'white',
-                    fontWeight: '600',
-                    padding: '16px 24px',
-                    borderRadius: '12px'
-                }
-            });
-
-            setTimeout(() => {
-                navigate('/admin');
-            }, 800);
+            toast.success('Welcome Back!', { duration: 2000 });
+            setTimeout(() => navigate('/admin'), 800);
 
         } catch (error) {
-            // Option 2: Fallback for local testing if admin@gmail.com isn't seeded in DB
+            // Fallback for local testing
             if (formData.email === 'admin@gmail.com' && formData.password === 'admin') {
-                const fallbackUser = {
-                    name: 'Super Admin',
-                    email: formData.email,
-                    role: 'admin',
-                    _id: '1'
-                };
+                const fallbackUser = { name: 'Super Admin', email: formData.email, role: 'admin', _id: '1' };
                 localStorage.setItem('user', JSON.stringify(fallbackUser));
-                
-                toast.success('Welcome Back!', {
-                    duration: 3000,
-                    position: 'top-center',
-                    style: {
-                        background: 'linear-gradient(135deg, #4f46e5, #7e22ce)',
-                        color: 'white',
-                        fontWeight: '600',
-                        padding: '16px 24px',
-                        borderRadius: '12px'
-                    }
-                });
-
-                setTimeout(() => {
-                    navigate('/admin');
-                }, 800);
+                toast.success('Welcome Back!', { duration: 2000 });
+                setTimeout(() => navigate('/admin'), 800);
             } else {
-                toast.error(error.response?.data?.error || 'Invalid credentials or Server Error');
+                toast.error(error.response?.data?.error || 'Invalid credentials');
             }
         }
     };
@@ -81,204 +60,98 @@ const Login = () => {
     return (
         <div style={{
             minHeight: '100vh',
+            background: 'linear-gradient(135deg, #eef2ff 0%, #faf5ff 50%, #f0f9ff 100%)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
             padding: '2rem',
-            position: 'relative',
-            overflow: 'hidden'
+            fontFamily: "'Inter', 'Segoe UI', sans-serif",
         }}>
-            {/* Background Effects */}
-            <div style={{
-                position: 'absolute',
-                top: '-10%',
-                right: '-10%',
-                width: '600px',
-                height: '600px',
-                background: 'radial-gradient(circle, rgba(79, 70, 229, 0.15), transparent 70%)',
-                borderRadius: '50%',
-                zIndex: -1
-            }}></div>
-            <div style={{
-                position: 'absolute',
-                bottom: '-10%',
-                left: '-10%',
-                width: '600px',
-                height: '600px',
-                background: 'radial-gradient(circle, rgba(126, 34, 206, 0.15), transparent 70%)',
-                borderRadius: '50%',
-                zIndex: -1
-            }}></div>
+            {/* Background blobs */}
+            <div style={{ position: 'fixed', top: '-120px', right: '-120px', width: '450px', height: '450px', background: 'radial-gradient(circle, rgba(79,70,229,0.08) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
+            <div style={{ position: 'fixed', bottom: '-120px', left: '-120px', width: '450px', height: '450px', background: 'radial-gradient(circle, rgba(126,34,206,0.08) 0%, transparent 70%)', borderRadius: '50%', pointerEvents: 'none' }} />
 
-            <div className="glass shadow-hard animate-fade-in" style={{
+            <div style={{
+                background: 'white',
+                borderRadius: '24px',
+                boxShadow: '0 8px 48px rgba(0,0,0,0.10), 0 2px 12px rgba(0,0,0,0.06)',
                 width: '100%',
-                maxWidth: '1000px',
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
-                borderRadius: '2rem',
-                overflow: 'hidden'
+                maxWidth: '440px',
+                padding: '2.75rem 2.5rem',
             }}>
-
-                {/* Left Side - Branding */}
-                <div style={{
-                    background: 'linear-gradient(135deg, #4f46e5 0%, #7e22ce 100%)',
-                    padding: '3rem',
-                    color: 'white',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    justifyContent: 'space-between',
-                    position: 'relative',
-                    overflow: 'hidden'
-                }}>
-                    {/* Pattern Overlay */}
-                    <div style={{
-                        position: 'absolute',
-                        inset: 0,
-                        opacity: 0.1,
-                        backgroundImage: 'radial-gradient(circle, white 1px, transparent 1px)',
-                        backgroundSize: '30px 30px'
-                    }}></div>
-
-                    <div style={{ position: 'relative', zIndex: 1 }}>
-                        <div style={{
-                            width: '64px',
-                            height: '64px',
-                            background: 'rgba(255, 255, 255, 0.2)',
-                            backdropFilter: 'blur(10px)',
-                            borderRadius: '16px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '2rem',
-                            marginBottom: '2rem'
-                        }}>
-                            <FaHospital />
-                        </div>
-
-                        <h2 style={{
-                            fontSize: '2.5rem',
-                            fontWeight: '800',
-                            marginBottom: '1rem',
-                            lineHeight: '1.2'
-                        }}>
-                            ABHI SK HOSPITAL<br />Admin Portal.
-                        </h2>
-
-                        <p style={{
-                            fontSize: '1.125rem',
-                            opacity: 0.9,
-                            lineHeight: '1.7'
-                        }}>
-                            Secure access for authorized administrative personnel only. Manage operations efficiently.
-                        </p>
-                    </div>
-
-                    <div className="glass" style={{
-                        position: 'relative',
-                        zIndex: 1,
-                        padding: '1.5rem',
-                        borderRadius: '1rem',
-                        background: 'rgba(255, 255, 255, 0.15)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '1rem'
-                    }}>
-                        <div style={{
-                            width: '48px',
-                            height: '48px',
-                            background: 'rgba(16, 185, 129, 0.9)',
-                            borderRadius: '12px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            fontSize: '1.25rem'
-                        }}>
-                            <FaShieldAlt />
-                        </div>
-                        <div>
-                            <p style={{ fontWeight: '700', marginBottom: '0.25rem' }}>100% Secure</p>
-                            <p style={{ fontSize: '0.875rem', opacity: 0.8 }}>End-to-end Encryption</p>
-                        </div>
-                    </div>
+                {/* Logo */}
+                {/* Logo */}
+                <div style={{ textAlign: 'center', marginBottom: '1.75rem' }}>
+                    <img src="/hospital-logo.png" alt="ABHI SK Hospital" style={{ height: '55px', objectFit: 'contain', margin: '0 auto' }} />
                 </div>
 
-                {/* Right Side - Form */}
-                <div style={{
-                    padding: '3rem',
-                    background: 'rgba(255, 255, 255, 0.7)',
-                    backdropFilter: 'blur(20px)'
-                }}>
-                    <div style={{ marginBottom: '2rem' }}>
-                        <h3 style={{
-                            fontSize: '2rem',
-                            fontWeight: '700',
-                            marginBottom: '0.5rem',
-                            color: '#0f172a'
-                        }}>
-                            Welcome Back
-                        </h3>
-                        <p style={{ color: '#64748b' }}>
-                            Please enter your details to login.
-                        </p>
-                    </div>
+                {/* Heading */}
+                <div style={{ marginBottom: '1.75rem' }}>
+                    <h2 style={{ fontSize: '1.875rem', fontWeight: '800', color: '#111827', margin: '0 0 0.25rem', letterSpacing: '-0.02em' }}>
+                        Admin Portal
+                    </h2>
+                    <p style={{ color: '#6b7280', fontSize: '0.9375rem', margin: 0 }}>
+                        Sign in to your admin account to continue
+                    </p>
+                </div>
 
-                    {/* Role Selector removed as this is now Admin only */}
-
-
-                    {/* Form */}
-                    <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
+                {/* Form */}
+                <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    {/* Email */}
+                    <div>
+                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '0.375rem' }}>Email Address</label>
                         <div style={{ position: 'relative' }}>
-                            <FaEnvelope style={{
-                                position: 'absolute',
-                                left: '1rem',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                color: '#94a3b8',
-                                zIndex: 1
-                            }} />
+                            <FaEnvelope style={{ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', fontSize: '0.875rem' }} />
                             <input
-                                type="email"
-                                name="email"
-                                placeholder="Email Address"
-                                className="input"
-                                style={{ paddingLeft: '3rem' }}
+                                type="email" name="email" placeholder="admin@gmail.com"
                                 value={formData.email}
-                                onChange={handleChange}
-                                required
+                                style={inputStyle} onChange={handleChange} required
+                                onFocus={e => { e.target.style.borderColor = '#4f46e5'; e.target.style.boxShadow = '0 0 0 3px rgba(79,70,229,0.10)'; }}
+                                onBlur={e => { e.target.style.borderColor = '#d1d5db'; e.target.style.boxShadow = 'none'; }}
                             />
                         </div>
+                    </div>
 
+                    {/* Password */}
+                    <div>
+                        <label style={{ display: 'block', fontSize: '0.875rem', fontWeight: '600', color: '#374151', marginBottom: '0.375rem' }}>Password</label>
                         <div style={{ position: 'relative' }}>
-                            <FaLock style={{
-                                position: 'absolute',
-                                left: '1rem',
-                                top: '50%',
-                                transform: 'translateY(-50%)',
-                                color: '#94a3b8',
-                                zIndex: 1
-                            }} />
+                            <FaLock style={{ position: 'absolute', left: '0.9rem', top: '50%', transform: 'translateY(-50%)', color: '#9ca3af', fontSize: '0.875rem' }} />
                             <input
-                                type="password"
-                                name="password"
-                                placeholder="Password"
-                                className="input"
-                                style={{ paddingLeft: '3rem' }}
+                                type={showPassword ? 'text' : 'password'} name="password" placeholder="••••••••"
                                 value={formData.password}
-                                onChange={handleChange}
-                                required
+                                style={{ ...inputStyle, paddingRight: '3rem' }} onChange={handleChange} required
+                                onFocus={e => { e.target.style.borderColor = '#4f46e5'; e.target.style.boxShadow = '0 0 0 3px rgba(79,70,229,0.10)'; }}
+                                onBlur={e => { e.target.style.borderColor = '#d1d5db'; e.target.style.boxShadow = 'none'; }}
                             />
+                            <button type="button" onClick={() => setShowPassword(!showPassword)} style={{ position: 'absolute', right: '0.9rem', top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#9ca3af', padding: 0 }}>
+                                {showPassword ? <FaEyeSlash /> : <FaEye />}
+                            </button>
                         </div>
+                    </div>
 
-                        <button type="submit" className="btn btn-primary" style={{
-                            width: '100%',
-                            padding: '1rem',
-                            fontSize: '1rem',
-                            marginTop: '0.5rem'
-                        }}>
-                            Sign In <FaArrowRight />
-                        </button>
-                    </form>
-                </div>
+                    {/* Submit */}
+                    <button
+                        type="submit"
+                        style={{
+                            width: '100%', padding: '0.9375rem',
+                            background: 'linear-gradient(135deg, #4f46e5, #7e22ce)',
+                            color: 'white', border: 'none', borderRadius: '10px',
+                            fontSize: '1rem', fontWeight: '700', cursor: 'pointer',
+                            marginTop: '0.25rem',
+                            boxShadow: '0 6px 20px rgba(79,70,229,0.30)',
+                            transition: 'transform 0.15s ease, box-shadow 0.15s ease',
+                        }}
+                        onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 10px 28px rgba(79,70,229,0.42)'; }}
+                        onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(79,70,229,0.30)'; }}
+                    >
+                        Sign In
+                    </button>
+                </form>
+
+                <p style={{ textAlign: 'center', marginTop: '1.5rem', fontSize: '0.875rem', color: '#9ca3af' }}>
+                    🔒 Authorized Personnel Only
+                </p>
             </div>
         </div>
     );

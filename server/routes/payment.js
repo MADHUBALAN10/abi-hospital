@@ -1,71 +1,113 @@
 const express = require('express');
 const router = express.Router();
-const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY || 'sk_test_mock_fallback_key');
+const Razorpay = require('razorpay');
+const crypto = require('crypto');
 
-// Create Checkout Session
-router.post('/create-checkout-session', async (req, res) => {
+const razorpay = new Razorpay({
+    key_id: process.env.RAZORPAY_KEY_ID,
+    key_secret: process.env.RAZORPAY_KEY_SECRET,
+});
+
+// Create Razorpay Order
+router.post('/create-order', async (req, res) => {
+    const { amount, doctorName, appointmentId } = req.body;
+
     try {
-        const { amount, doctorName, successUrl, cancelUrl, appointmentId } = req.body;
-
         if (!amount || amount <= 0) {
             return res.status(400).json({ error: 'Invalid amount' });
         }
 
-        console.log('💳 Creating Checkout Session:', { amount, doctorName });
+        console.log('💳 Creating Razorpay Order:', { amount, doctorName, appointmentId });
 
-        const session = await stripe.checkout.sessions.create({
-            payment_method_types: ['card'],
-            line_items: [
-                {
-                    price_data: {
-                        currency: 'inr',
-                        product_data: {
-                            name: `Consultation with ${doctorName}`,
-                        },
-                        unit_amount: Math.round(amount * 100),
-                    },
-                    quantity: 1,
-                },
-            ],
-            mode: 'payment',
-            success_url: successUrl,
-            cancel_url: cancelUrl,
-            client_reference_id: appointmentId,
+        const order = await razorpay.orders.create({
+            amount: Math.round(amount * 100), // Razorpay expects paise
+            currency: 'INR',
+            receipt: `appt_${appointmentId}`,
+            notes: {
+                appointmentId: appointmentId,
+                doctorName: doctorName,
+                hospital: 'ABHI SK Hospital',
+            },
         });
 
-        console.log('✅ Checkout Session created:', session.url);
+        console.log('✅ Razorpay Order created:', order.id);
 
         res.json({
-            url: session.url
+            orderId: order.id,
+            amount: order.amount,
+            currency: order.currency,
+            keyId: process.env.RAZORPAY_KEY_ID,
         });
     } catch (err) {
-        console.error('❌ Stripe Error:', err.message);
+        console.error('❌ Razorpay Error:', err.message);
         res.status(500).json({ error: err.message });
     }
 });
 
-// Verify Payment by reading the checkout session
-router.get('/verify-session/:sessionId', async (req, res) => {
+// Verify Payment Signature
+router.post('/verify-payment', async (req, res) => {
+    const { razorpay_order_id, razorpay_payment_id, razorpay_signature, appointmentId } = req.body;
+
     try {
-        const session = await stripe.checkout.sessions.retrieve(req.params.sessionId);
-        res.json({
-            paymentStatus: session.payment_status,
-            amount: session.amount_total / 100,
-            appointmentId: session.client_reference_id,
-        });
+        // Verify signature using HMAC SHA256
+        const body = razorpay_order_id + '|' + razorpay_payment_id;
+        const expectedSignature = crypto
+            .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET)
+            .update(body)
+            .digest('hex');
+
+        const isValid = expectedSignature === razorpay_signature;
+
+        console.log('🔍 Payment verification:', { razorpay_order_id, razorpay_payment_id, isValid });
+
+        if (isValid) {
+            // Update appointment payment status
+            if (appointmentId) {
+                const Appointment = require('../models/Appointment');
+                await Appointment.findByIdAndUpdate(appointmentId, {
+                    paymentStatus: 'Paid',
+                    paymentId: razorpay_payment_id,
+                }, { new: true });
+                console.log('✅ Appointment payment updated:', appointmentId);
+            }
+
+            res.json({
+                success: true,
+                message: 'Payment verified successfully',
+                paymentId: razorpay_payment_id,
+            });
+        } else {
+            console.error('❌ Invalid payment signature');
+            res.status(400).json({
+                success: false,
+                error: 'Invalid payment signature',
+            });
+        }
     } catch (err) {
         console.error('❌ Payment verification error:', err.message);
         res.status(500).json({ error: err.message });
     }
 });
 
+// Update appointment payment status (manual fallback)
 router.put('/update-appointment-payment/:id', async (req, res) => {
     try {
         const Appointment = require('../models/Appointment');
-        const { paymentStatus } = req.body;
-        const appt = await Appointment.findByIdAndUpdate(req.params.id, { paymentStatus }, { new: true });
+        const { paymentStatus, paymentId } = req.body;
+
+        const updateData = { paymentStatus };
+        if (paymentId) updateData.paymentId = paymentId;
+
+        const appt = await Appointment.findByIdAndUpdate(req.params.id, updateData, { new: true });
+
+        if (!appt) {
+            return res.status(404).json({ error: 'Appointment not found' });
+        }
+
+        console.log('✅ Appointment payment updated:', req.params.id, '→', paymentStatus);
         res.json(appt);
     } catch (err) {
+        console.error('❌ Error updating appointment payment:', err.message);
         res.status(500).json({ error: err.message });
     }
 });

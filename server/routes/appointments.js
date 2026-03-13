@@ -1,6 +1,9 @@
 const express = require('express');
 const router = express.Router();
 const Appointment = require('../models/Appointment');
+const { sendBookingEmail, sendSuccessfulAppointmentEmail } = require('../utils/emailService');
+
+
 
 // Book Appointment
 router.post('/', async (req, res) => {
@@ -52,6 +55,16 @@ router.post('/', async (req, res) => {
                 path: 'doctorId',
                 populate: { path: 'userId', select: 'name email' }
             });
+
+        // Send Confirmation Email + Invoice after 20 seconds
+        setTimeout(async () => {
+            try {
+                await sendBookingEmail(populatedAppt);
+                console.log(`🕒 Delayed email sent for appointment: ${populatedAppt._id}`);
+            } catch (emailErr) {
+                console.error('⚠️ Delayed email notification failed:', emailErr.message);
+            }
+        }, 20000);  // 20 seconds delay
 
         res.status(201).json(populatedAppt);
     } catch (err) {
@@ -129,7 +142,20 @@ router.put('/:id', async (req, res) => {
             return res.status(404).json({ error: 'Appointment not found' });
         }
 
+        // If status changed to Completed, send completion email with delay
+        if (status === 'Completed') {
+            setTimeout(async () => {
+                try {
+                    await sendSuccessfulAppointmentEmail(updated);
+                    console.log(`🕒 Delayed completion email sent for: ${updated._id}`);
+                } catch (emailErr) {
+                    console.error('⚠️ Delayed completion email failed:', emailErr.message);
+                }
+            }, 20000); // 20 seconds delay
+        }
+
         res.json(updated);
+
     } catch (err) {
         console.error('Error updating appointment:', err);
         res.status(500).json({ error: err.message });

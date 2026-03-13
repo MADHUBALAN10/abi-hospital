@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
     FaUserMd, FaPills, FaMoneyBillWave, FaWhatsapp,
-    FaChartPie, FaSignOutAlt, FaBell, FaUserNurse,
+    FaChartPie, FaSignOutAlt, FaBell, FaUserNurse, FaCalendarAlt
 } from 'react-icons/fa';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -20,6 +20,7 @@ import Payments from './sections/Payments';
 import DoctorsTeam from './sections/DoctorsTeam';
 import WhatsAppConfig from './sections/WhatsAppConfig';
 import NursesTeam from './sections/NursesTeam';
+import AppointmentsList from './sections/AppointmentsList';
 
 const API_URL = import.meta.env.MODE === 'development' ? 'http://localhost:5000/api' : 'https://abi-hospital-backend.onrender.com/api';
 
@@ -58,7 +59,7 @@ const AdminDashboard = () => {
             setStats({
                 doctors: docRes.data.length,
                 patients: new Set(apptRes.data.map((a) => a.patientId?._id)).size,
-                appointments: apptRes.data.filter((a) => a.status === 'pending').length,
+                appointments: apptRes.data.filter((a) => (a.status || '').toLowerCase() === 'pending').length,
                 revenue: apptRes.data
                     .filter((a) => a.paymentStatus === 'completed')
                     .reduce((sum, a) => sum + (a.paymentAmount || 0), 0),
@@ -132,10 +133,11 @@ const AdminDashboard = () => {
 
     /* ── Sidebar nav items config ─────────────────────────── */
     const navItems = [
-        { id: 'overview', icon: <FaChartPie />, label: 'Dashboard', badge: stats.appointments > 0 ? stats.appointments : null },
+        { id: 'overview', icon: <FaChartPie />, label: 'Dashboard' },
+        { id: 'appointments', icon: <FaCalendarAlt />, label: 'Appointments', badge: stats.appointments > 0 ? stats.appointments : null },
         { id: 'doctors', icon: <FaUserMd />, label: 'Doctors', count: stats.doctors },
         { id: 'nurses', icon: <FaUserNurse />, label: 'Nurses', count: nurses.length },
-        { id: 'stock', icon: <FaPills />, label: 'Inventory' },
+        { id: 'stock', icon: <FaPills />, label: 'Medicines' },
         { id: 'payments', icon: <FaMoneyBillWave />, label: 'Payments' },
     ];
 
@@ -151,6 +153,7 @@ const AdminDashboard = () => {
         }
         switch (activeTab) {
             case 'overview': return <Overview stats={stats} appointments={appointments} />;
+            case 'appointments': return <AppointmentsList appointments={appointments} onRefresh={fetchData} />;
             case 'stock': return <MedicalStock inventory={inventory} doctors={doctors} onAdd={handleAddInventory} onEdit={handleEditInventory} onDelete={handleDeleteInventory} />;
             case 'payments': return <Payments appointments={appointments} stats={stats} />;
             case 'doctors': return <DoctorsTeam doctors={doctors} onRefresh={fetchData} />;
@@ -217,15 +220,6 @@ const AdminDashboard = () => {
                             count={item.count}
                         />
                     ))}
-
-                    <div className="admin-nav-section">Integration</div>
-
-                    <NavItem
-                        icon={<FaWhatsapp />}
-                        label="WhatsApp Bot"
-                        active={activeTab === 'whatsapp'}
-                        onClick={() => setActiveTab('whatsapp')}
-                    />
                 </nav>
 
                 {/* Logout */}
@@ -249,7 +243,7 @@ const AdminDashboard = () => {
 
                     <div className="admin-header-actions">
                         {/* Notification Bell */}
-                        <button className="admin-notif-btn">
+                        <button className="admin-notif-btn" onClick={() => setActiveTab('appointments')} style={{ cursor: 'pointer' }}>
                             <FaBell />
                             {stats.appointments > 0 && <span className="admin-notif-dot" />}
                         </button>

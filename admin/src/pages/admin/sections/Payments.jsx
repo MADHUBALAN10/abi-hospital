@@ -58,9 +58,9 @@ const generateInvoicePDF = (appt, invoiceNo) => {
   <div class="page">
     <div class="header">
       <div>
-        <h1>🏥 MediCare+</h1>
+        <h1>🏥 ABHI SK HOSPITAL</h1>
         <p>Hospital Management System</p>
-        <p style="margin-top:8px; font-size:12px; opacity:.7;">123 Health Avenue, Medical City · info@medicare.com</p>
+        <p style="margin-top:8px; font-size:12px; opacity:.7;">123 Health Avenue, Medical City · info@abhisk.com</p>
       </div>
       <div class="badge">
         <span>INVOICE</span>
@@ -127,8 +127,8 @@ const generateInvoicePDF = (appt, invoiceNo) => {
     </div>
 
     <div class="footer">
-      <p>Generated on ${new Date().toLocaleString('en-IN')} · MediCare+ System</p>
-      <p class="thank">Thank you for choosing MediCare+ 💙</p>
+      <p>Generated on ${new Date().toLocaleString('en-IN')} · ABHI SK HOSPITAL System</p>
+      <p class="thank">Thank you for choosing ABHI SK HOSPITAL 💙</p>
     </div>
   </div>
 </body>

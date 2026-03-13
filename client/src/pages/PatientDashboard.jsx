@@ -51,7 +51,7 @@ const GreenBookingForm = ({ selectedDoctor, doctors, selectedDate, setSelectedDa
             display: 'grid', gridTemplateColumns: '1fr 1fr',
             minHeight: '540px', maxWidth: '960px', margin: '0 auto',
         }}>
-            {/* Left — Medical image with green overlay */}
+            {/* Left — Medical image with yellow overlay */}
             <div style={{
                 position: 'relative', overflow: 'hidden',
                 backgroundImage: `url('https://img.freepik.com/free-photo/doctor-checking-patient-health_1279-2018.jpg')`,
@@ -59,21 +59,21 @@ const GreenBookingForm = ({ selectedDoctor, doctors, selectedDate, setSelectedDa
             }}>
                 <div style={{
                     position: 'absolute', inset: 0,
-                    background: 'linear-gradient(160deg, rgba(22,163,74,0.82) 0%, rgba(5,90,40,0.88) 100%)',
+                    background: 'linear-gradient(160deg, rgba(250, 204, 21, 0.85) 0%, rgba(234, 179, 8, 0.92) 100%)',
                 }} />
-                <div style={{ position: 'relative', zIndex: 1, padding: '48px 36px', color: 'white', height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{ position: 'relative', zIndex: 1, padding: '48px 36px', color: '#1e293b', height: '100%', boxSizing: 'border-box', display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
                     <button onClick={onBack} style={{
-                        background: 'rgba(255,255,255,0.18)', color: 'white', border: 'none',
+                        background: 'rgba(0,0,0,0.08)', color: '#1e293b', border: 'none',
                         padding: '8px 16px', borderRadius: '8px', cursor: 'pointer',
-                        fontWeight: '600', fontSize: '0.85rem', marginBottom: '32px',
+                        fontWeight: '700', fontSize: '0.85rem', marginBottom: '32px',
                         display: 'inline-flex', alignItems: 'center', gap: '6px', width: 'fit-content',
                     }}>← Back to Doctors</button>
 
                     <div style={{ fontSize: '2.8rem', marginBottom: '12px' }}>🏥</div>
-                    <h2 style={{ fontSize: '1.7rem', fontWeight: '800', marginBottom: '12px', lineHeight: 1.3 }}>
+                    <h2 style={{ fontSize: '1.7rem', fontWeight: '800', marginBottom: '12px', lineHeight: 1.3, color: '#0f172a' }}>
                         Book an Appointment
                     </h2>
-                    <p style={{ fontSize: '0.92rem', opacity: 0.88, lineHeight: 1.7, marginBottom: '28px' }}>
+                    <p style={{ fontSize: '0.92rem', opacity: 0.9, lineHeight: 1.7, marginBottom: '28px', color: '#334155' }}>
                         Please feel welcome to contact our staff with any general or medical enquiry.
                         Our doctors will receive or return any urgent calls.
                     </p>
@@ -243,7 +243,99 @@ const GreenBookingForm = ({ selectedDoctor, doctors, selectedDate, setSelectedDa
     );
 };
 
+/* ── Dynamic Background Generator ── */
+const getPatientTheme = (user) => {
+    if (!user?._id) return {
+        bg: 'linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%)',
+        accent: '#667eea',
+        lightAccent: 'rgba(102, 126, 234, 0.1)'
+    };
+
+    let hash = 0;
+    const str = user._id + user.name;
+    for (let i = 0; i < str.length; i++) {
+        hash = str.charCodeAt(i) + ((hash << 5) - hash);
+    }
+
+    const hue = Math.abs(hash % 360);
+    const hue2 = (hue + 30) % 360;
+
+    return {
+        bg: `linear-gradient(135deg, hsl(${hue}, 85%, 97%) 0%, hsl(${hue2}, 85%, 94%) 100%)`,
+        accent: `hsl(${hue}, 60%, 50%)`,
+        lightAccent: `hsla(${hue}, 60%, 50%, 0.1)`,
+        mutedAccent: `hsl(${hue}, 40%, 65%)`,
+        glassBg: 'rgba(255, 255, 255, 0.65)',
+        border: `hsla(${hue}, 60%, 50%, 0.15)`
+    };
+};
+
+/* ── Animated Stat Counter Card ─────────────────────────── */
+const StatCounterCard = ({ stat }) => {
+    const [count, setCount] = React.useState(0);
+    const ref = React.useRef(null);
+    const started = React.useRef(false);
+
+    React.useEffect(() => {
+        const observer = new IntersectionObserver(([entry]) => {
+            if (entry.isIntersecting && !started.current) {
+                started.current = true;
+                const duration = 2000;
+                const steps = 60;
+                const increment = stat.end / steps;
+                let current = 0;
+                const timer = setInterval(() => {
+                    current += increment;
+                    if (current >= stat.end) {
+                        setCount(stat.end);
+                        clearInterval(timer);
+                    } else {
+                        setCount(Math.floor(current));
+                    }
+                }, duration / steps);
+            }
+        }, { threshold: 0.3 });
+        if (ref.current) observer.observe(ref.current);
+        return () => observer.disconnect();
+    }, [stat.end]);
+
+    const format = (n) => {
+        if (!stat.formatted) return n;
+        if (n >= 100000) return `${Math.floor(n / 1000).toLocaleString('en-IN')},${String(n % 1000).padStart(3, '0')}`;
+        return n.toLocaleString('en-IN');
+    };
+
+    return (
+        <div ref={ref} style={{
+            padding: '2.5rem 1.5rem',
+            textAlign: 'center',
+            borderRight: '1px solid rgba(255,255,255,0.15)',
+        }}>
+            <p style={{
+                fontSize: '2.6rem',
+                fontWeight: '900',
+                color: '#f59e0b',
+                marginBottom: '0.5rem',
+                letterSpacing: '-1px',
+                lineHeight: 1,
+            }}>
+                {format(count)}{stat.suffix}
+            </p>
+            <p style={{
+                fontSize: '0.78rem',
+                fontWeight: '700',
+                letterSpacing: '0.12em',
+                color: 'rgba(255,255,255,0.9)',
+                textTransform: 'uppercase',
+            }}>
+                {stat.label}
+            </p>
+        </div>
+    );
+};
+
 const PatientDashboard = () => {
+
     const [activeTab, setActiveTab] = useState('home');
     const [activeStep, setActiveStep] = useState(1);
     const [selectedDoctor, setSelectedDoctor] = useState(null);
@@ -251,6 +343,7 @@ const PatientDashboard = () => {
     const [selectedSlot, setSelectedSlot] = useState(null);
     const [loading, setLoading] = useState(false);
     const [doctors, setDoctors] = useState([]);
+    const [inventory, setInventory] = useState([]);
     const [myAppointments, setMyAppointments] = useState([]);
     const [showSuccessModal, setShowSuccessModal] = useState(false);
     const [bookedAppointment, setBookedAppointment] = useState(null);
@@ -263,7 +356,12 @@ const PatientDashboard = () => {
     const [rescheduleAppt, setRescheduleAppt] = useState(null);
     const [rescheduleDate, setRescheduleDate] = useState('');
     const [rescheduleSlot, setRescheduleSlot] = useState('');
+    const [showNotifications, setShowNotifications] = useState(false);
+    const [showProfile, setShowProfile] = useState(false);
     const navigate = useNavigate();
+
+    const theme = getPatientTheme(user);
+
 
     // Auto-fix user data on load - RUNS ONLY ONCE
     useEffect(() => {
@@ -323,41 +421,9 @@ const PatientDashboard = () => {
     }, []); // Empty dependency array - runs ONCE on mount
 
     useEffect(() => {
+        // Nothing to check on URL for Razorpay — payment is handled via modal callback
+        // But keep cancel handling if user navigates back
         const urlParams = new URLSearchParams(window.location.search);
-        const appointmentId = urlParams.get('appointmentId');
-
-        if (urlParams.get('success')) {
-            toast.success('✅ Payment successful! Appointment confirmed.', {
-                duration: 4000,
-                position: 'top-center',
-                icon: '🎉',
-                style: {
-                    background: 'linear-gradient(135deg, #10b981, #059669)',
-                    color: 'white', fontWeight: '700', padding: '16px 24px',
-                    borderRadius: '16px', fontSize: '1.0625rem',
-                    boxShadow: '0 10px 40px rgba(16, 185, 129, 0.3)'
-                }
-            });
-            if (appointmentId) {
-                axios.put(`${API_URL}/payment/update-appointment-payment/${appointmentId}`, { paymentStatus: 'Paid' })
-                    .catch(e => console.error("Error updating status:", e));
-            }
-
-            setBookedAppointment({
-                doctor: { name: "Your Doctor", specialty: "Consultation", color: "#10b981", avatar: "👩‍⚕️" },
-                date: new Date().toISOString(),
-                slot: "Confirmed"
-            });
-            setShowSuccessModal(true);
-
-            setTimeout(() => {
-                setShowSuccessModal(false);
-                setActiveTab('home');
-            }, 4000);
-
-            window.history.replaceState({}, document.title, window.location.pathname);
-        }
-
         if (urlParams.get('canceled')) {
             toast.error('❌ Payment canceled. Appointment not finalized.', {
                 duration: 4000,
@@ -371,6 +437,7 @@ const PatientDashboard = () => {
         if (user) {
             fetchDoctors();
             fetchMyAppointments();
+            fetchInventory();
         }
     }, [user]);
 
@@ -412,6 +479,16 @@ const PatientDashboard = () => {
         }
     };
 
+    const fetchInventory = async () => {
+        try {
+            const res = await axios.get(`${API_URL}/inventory`);
+            setInventory(res.data);
+        } catch (error) {
+            console.error('Error fetching inventory:', error);
+            setInventory([]);
+        }
+    };
+
     const timeSlots = [
         { time: '09:00 AM', available: true },
         { time: '10:00 AM', available: true },
@@ -443,21 +520,84 @@ const PatientDashboard = () => {
             const apptRes = await axios.post(`${API_URL}/appointments`, bookingData);
             const newAppointmentId = apptRes.data._id;
 
-            // Initiate Checkout
-            const checkoutRes = await axios.post(`${API_URL}/payment/create-checkout-session`, {
+            // Create Razorpay order
+            const orderRes = await axios.post(`${API_URL}/payment/create-order`, {
                 amount: total,
                 doctorName: selectedDoctor.name,
                 appointmentId: newAppointmentId,
-                successUrl: `${window.location.origin}/patient-dashboard?success=true&appointmentId=${newAppointmentId}`,
-                cancelUrl: `${window.location.origin}/patient-dashboard?canceled=true`
             });
 
-            if (checkoutRes.data.url) {
-                window.location.href = checkoutRes.data.url;
-            } else {
-                toast.error("Failed to generate payment link.");
-                setLoading(false);
-            }
+            const { orderId, keyId } = orderRes.data;
+
+            // Open Razorpay Checkout Modal
+            const options = {
+                key: keyId,
+                amount: Math.round(total * 100),
+                currency: 'INR',
+                name: 'ABHI SK Hospital',
+                description: `Consultation with Dr. ${selectedDoctor.name}`,
+                order_id: orderId,
+                handler: async function (response) {
+                    // Payment successful — verify on server
+                    try {
+                        const verifyRes = await axios.post(`${API_URL}/payment/verify-payment`, {
+                            razorpay_order_id: response.razorpay_order_id,
+                            razorpay_payment_id: response.razorpay_payment_id,
+                            razorpay_signature: response.razorpay_signature,
+                            appointmentId: newAppointmentId,
+                        });
+
+                        if (verifyRes.data.success) {
+                            toast.success('✅ Payment successful! Appointment confirmed.', {
+                                duration: 4000,
+                                position: 'top-center',
+                                icon: '🎉',
+                                style: {
+                                    background: 'linear-gradient(135deg, #10b981, #059669)',
+                                    color: 'white', fontWeight: '700', padding: '16px 24px',
+                                    borderRadius: '16px', fontSize: '1.0625rem',
+                                    boxShadow: '0 10px 40px rgba(16, 185, 129, 0.3)'
+                                }
+                            });
+
+                            setBookedAppointment({
+                                doctor: selectedDoctor,
+                                date: selectedDate || new Date().toISOString(),
+                                slot: selectedSlot,
+                            });
+                            setShowSuccessModal(true);
+                            fetchMyAppointments();
+
+                            setTimeout(() => {
+                                setShowSuccessModal(false);
+                                setActiveTab('home');
+                            }, 4000);
+                        } else {
+                            toast.error('⚠️ Payment verification failed. Please contact support.');
+                        }
+                    } catch (err) {
+                        console.error('Verification error:', err);
+                        toast.error('⚠️ Could not verify payment. Please contact support.');
+                    }
+                    setLoading(false);
+                },
+                prefill: {
+                    name: user.name || '',
+                    email: user.email || '',
+                },
+                theme: {
+                    color: '#7c3aed',
+                },
+                modal: {
+                    ondismiss: function () {
+                        toast.error('❌ Payment canceled.', { duration: 3000 });
+                        setLoading(false);
+                    },
+                },
+            };
+
+            const rzp = new window.Razorpay(options);
+            rzp.open();
 
         } catch (error) {
             console.error('Booking error:', error);
@@ -549,18 +689,26 @@ const PatientDashboard = () => {
     }
 
     return (
-        <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' }}>
+        <div style={{
+            minHeight: '100vh',
+            background: theme.bg,
+            fontFamily: "'Inter', sans-serif",
+            transition: 'all 0.5s ease'
+        }}>
+
             <Toaster position="top-center" />
 
             {/* Modern Header */}
             <header style={{
-                background: 'rgba(255, 255, 255, 0.95)',
-                backdropFilter: 'blur(20px)',
-                boxShadow: '0 4px 20px rgba(0, 0, 0, 0.08)',
+                background: 'rgba(255, 255, 255, 0.4)',
+                backdropFilter: 'blur(16px)',
+                borderBottom: `1px solid ${theme.border}`,
+                boxShadow: '0 4px 30px rgba(0, 0, 0, 0.03)',
                 position: 'sticky',
                 top: 0,
                 zIndex: 100
             }}>
+
                 <div style={{
                     maxWidth: '1400px',
                     margin: '0 auto',
@@ -617,66 +765,196 @@ const PatientDashboard = () => {
                     </div>
 
                     <nav style={{ display: 'flex', gap: '0.5rem' }}>
-                        {['home', 'book', 'appointments', 'history'].map(tab => (
+                        {['home', 'book', 'appointments', 'history', 'medicines'].map(tab => (
                             <button
                                 key={tab}
                                 onClick={() => setActiveTab(tab)}
                                 style={{
                                     padding: '0.625rem 1.25rem',
-                                    background: activeTab === tab ? 'linear-gradient(135deg, #667eea, #764ba2)' : 'transparent',
-                                    color: activeTab === tab ? 'white' : '#64748b',
+                                    background: activeTab === tab ? `linear-gradient(135deg, ${theme.accent}, ${theme.mutedAccent})` : 'transparent',
+                                    color: activeTab === tab ? 'white' : '#475569',
                                     border: 'none',
-                                    borderRadius: '10px',
+                                    borderRadius: '12px',
                                     fontWeight: '600',
                                     cursor: 'pointer',
-                                    transition: 'all 0.3s',
-                                    textTransform: 'capitalize'
+                                    transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                                    textTransform: 'capitalize',
+                                    boxShadow: activeTab === tab ? `0 8px 20px ${theme.accent}33` : 'none'
+
                                 }}
                             >
-                                {tab === 'book' ? 'Book Appointment' : tab}
+                                {tab === 'book' ? 'Book Appointment' : tab === 'medicines' ? 'Medicines' : tab}
                             </button>
                         ))}
                     </nav>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <button style={{
-                            width: '40px',
-                            height: '40px',
-                            background: '#f1f5f9',
-                            border: 'none',
-                            borderRadius: '10px',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center'
-                        }}>
-                            <FaBell color="#64748b" />
-                        </button>
-                        <div style={{
-                            width: '40px',
-                            height: '40px',
-                            background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                            borderRadius: '10px',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            color: 'white',
-                            fontWeight: '700',
-                            fontSize: '1rem'
-                        }}>
-                            {user.name?.[0] || 'P'}
+
+                        {/* ── Bell / Notifications ── */}
+                        <div style={{ position: 'relative' }}>
+                            <button
+                                onClick={() => { setShowNotifications(p => !p); setShowProfile(false); }}
+                                style={{
+                                    width: '40px', height: '40px',
+                                    background: showNotifications ? '#e0e7ff' : '#f1f5f9',
+                                    border: 'none', borderRadius: '10px', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    position: 'relative', transition: 'background 0.2s',
+                                }}
+                            >
+                                <FaBell color={showNotifications ? '#6366f1' : '#64748b'} />
+                                {/* Red dot if there are upcoming appointments */}
+                                {myAppointments.filter(a => a.status !== 'Completed' && a.status !== 'Cancelled').length > 0 && (
+                                    <span style={{
+                                        position: 'absolute', top: '6px', right: '6px',
+                                        width: '8px', height: '8px', borderRadius: '50%',
+                                        background: '#ef4444', border: '2px solid white',
+                                    }} />
+                                )}
+                            </button>
+
+                            {/* Notification dropdown */}
+                            {showNotifications && (
+                                <div style={{
+                                    position: 'absolute', top: 'calc(100% + 10px)', right: 0,
+                                    width: '320px', background: 'white',
+                                    borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+                                    border: '1px solid #e2e8f0', zIndex: 200, overflow: 'hidden',
+                                }}>
+                                    <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid #f1f5f9', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <h4 style={{ margin: 0, fontWeight: 700, color: '#1e293b', fontSize: '0.95rem' }}>🔔 Notifications</h4>
+                                        <span style={{ fontSize: '0.75rem', background: '#e0e7ff', color: '#4f46e5', padding: '2px 8px', borderRadius: '20px', fontWeight: 700 }}>
+                                            {myAppointments.filter(a => a.status !== 'Completed' && a.status !== 'Cancelled').length} upcoming
+                                        </span>
+                                    </div>
+                                    <div style={{ maxHeight: '280px', overflowY: 'auto' }}>
+                                        {myAppointments.filter(a => a.status !== 'Completed' && a.status !== 'Cancelled').length === 0 ? (
+                                            <div style={{ textAlign: 'center', padding: '2rem', color: '#94a3b8' }}>
+                                                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>✅</div>
+                                                <p style={{ fontSize: '0.875rem', fontWeight: 600 }}>No pending appointments</p>
+                                            </div>
+                                        ) : (
+                                            myAppointments
+                                                .filter(a => a.status !== 'Completed' && a.status !== 'Cancelled')
+                                                .slice(0, 5)
+                                                .map((appt, i) => (
+                                                    <div key={appt._id || i} style={{
+                                                        padding: '0.9rem 1.25rem', borderBottom: '1px solid #f8fafc',
+                                                        display: 'flex', gap: '0.75rem', alignItems: 'flex-start',
+                                                        cursor: 'pointer', transition: 'background 0.15s',
+                                                    }}
+                                                        onClick={() => { setShowNotifications(false); setActiveTab('appointments'); }}
+                                                        onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                                    >
+                                                        <div style={{ width: 36, height: 36, borderRadius: 10, background: appt.status === 'Confirmed' ? '#dbeafe' : '#fef3c7', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.1rem', flexShrink: 0 }}>
+                                                            {appt.status === 'Confirmed' ? '✅' : '⏳'}
+                                                        </div>
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <p style={{ margin: 0, fontSize: '0.85rem', fontWeight: 700, color: '#1e293b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                                Dr. {appt.doctorId?.userId?.name || 'Doctor'}
+                                                            </p>
+                                                            <p style={{ margin: 0, fontSize: '0.78rem', color: '#64748b', marginTop: 2 }}>
+                                                                {appt.date ? new Date(appt.date).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : '—'} • {appt.timeSlot || '—'}
+                                                            </p>
+                                                            <span style={{ display: 'inline-block', marginTop: 4, padding: '1px 8px', borderRadius: 10, fontSize: '0.7rem', fontWeight: 700, background: appt.status === 'Confirmed' ? '#dbeafe' : '#fef3c7', color: appt.status === 'Confirmed' ? '#1e40af' : '#92400e' }}>
+                                                                {appt.status}
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                ))
+                                        )}
+                                    </div>
+                                    <div style={{ padding: '0.75rem 1.25rem', borderTop: '1px solid #f1f5f9' }}>
+                                        <button onClick={() => { setShowNotifications(false); setActiveTab('appointments'); }}
+                                            style={{ width: '100%', background: 'none', border: 'none', color: '#6366f1', fontWeight: 700, fontSize: '0.85rem', cursor: 'pointer', padding: '0.25rem 0' }}>
+                                            View all appointments →
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
                         </div>
+
+                        {/* ── Profile Avatar ── */}
+                        <div style={{ position: 'relative' }}>
+                            <button
+                                onClick={() => { setShowProfile(p => !p); setShowNotifications(false); }}
+                                style={{
+                                    width: '40px', height: '40px',
+                                    background: '#f1f5f9',
+                                    border: showProfile ? '2px solid #cbd5e1' : '2px solid transparent',
+                                    borderRadius: '10px', cursor: 'pointer',
+                                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                    color: '#475569', fontWeight: '800', fontSize: '1.2rem',
+                                    boxSizing: 'border-box', transition: 'all 0.2s',
+                                    outline: 'none',
+                                }}
+                            >
+                                {user?.name?.[0]?.toUpperCase() || 'P'}
+                            </button>
+
+                            {/* Profile dropdown */}
+                            {showProfile && (
+                                <div style={{
+                                    position: 'absolute', top: 'calc(100% + 10px)', right: 0,
+                                    width: '260px', background: 'white',
+                                    borderRadius: '16px', boxShadow: '0 20px 60px rgba(0,0,0,0.15)',
+                                    border: '1px solid #e2e8f0', zIndex: 200, overflow: 'hidden',
+                                }}>
+                                    {/* Profile header */}
+                                    <div style={{ padding: '1.25rem', background: `linear-gradient(135deg, ${theme.accent} 0%, ${theme.mutedAccent} 100%)`, textAlign: 'center' }}>
+                                        <div style={{ width: 56, height: 56, borderRadius: 14, background: 'rgba(255,255,255,0.25)', margin: '0 auto 0.75rem', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 800, color: 'white' }}>
+                                            {user?.name?.[0]?.toUpperCase() || 'P'}
+                                        </div>
+                                        <p style={{ margin: 0, fontWeight: 700, color: 'white', fontSize: '1rem' }}>{user?.name || 'Patient'}</p>
+                                        <p style={{ margin: '2px 0 0', fontSize: '0.78rem', color: 'rgba(255,255,255,0.8)' }}>{user?.email || ''}</p>
+                                    </div>
+
+
+                                    {/* Menu items */}
+                                    <div style={{ padding: '0.5rem' }}>
+                                        {[
+                                            { icon: '🏠', label: 'Dashboard', action: () => { setActiveTab('home'); setShowProfile(false); } },
+                                            { icon: '📅', label: 'My Appointments', action: () => { setActiveTab('appointments'); setShowProfile(false); } },
+                                            { icon: '📋', label: 'History', action: () => { setActiveTab('history'); setShowProfile(false); } },
+                                        ].map(item => (
+                                            <button key={item.label} onClick={item.action} style={{
+                                                width: '100%', padding: '0.7rem 1rem', background: 'none', border: 'none',
+                                                borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center',
+                                                gap: '0.7rem', fontSize: '0.875rem', fontWeight: 600, color: '#374151',
+                                                transition: 'background 0.15s', textAlign: 'left',
+                                            }}
+                                                onMouseEnter={e => e.currentTarget.style.background = '#f8fafc'}
+                                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                            >
+                                                <span>{item.icon}</span> {item.label}
+                                            </button>
+                                        ))}
+
+                                        <div style={{ height: 1, background: '#f1f5f9', margin: '0.4rem 0' }} />
+
+                                        <button onClick={handleLogout} style={{
+                                            width: '100%', padding: '0.7rem 1rem', background: 'none', border: 'none',
+                                            borderRadius: 10, cursor: 'pointer', display: 'flex', alignItems: 'center',
+                                            gap: '0.7rem', fontSize: '0.875rem', fontWeight: 700, color: '#dc2626',
+                                            transition: 'background 0.15s', textAlign: 'left',
+                                        }}
+                                            onMouseEnter={e => e.currentTarget.style.background = '#fee2e2'}
+                                            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            <FaSignOutAlt /> Sign Out
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* ── Logout button (keep for quick access) ── */}
                         <button onClick={handleLogout} style={{
                             padding: '0.625rem 1.25rem',
-                            background: '#fee2e2',
-                            color: '#dc2626',
-                            border: 'none',
-                            borderRadius: '10px',
-                            fontWeight: '600',
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '0.5rem'
+                            background: '#fee2e2', color: '#dc2626',
+                            border: 'none', borderRadius: '10px', fontWeight: '600',
+                            cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem'
                         }}>
                             <FaSignOutAlt /> Logout
                         </button>
@@ -690,85 +968,159 @@ const PatientDashboard = () => {
                     <div>
                         {/* Hero Section */}
                         <div style={{
-                            background: 'rgba(255, 255, 255, 0.95)',
-                            backdropFilter: 'blur(20px)',
-                            borderRadius: '24px',
-                            padding: '3rem',
-                            marginBottom: '2rem',
-                            boxShadow: '0 20px 60px rgba(0, 0, 0, 0.1)'
+                            background: `url(https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=1400&q=80) center/cover no-repeat`,
+                            borderRadius: '32px',
+                            padding: '3.5rem',
+                            marginBottom: '2.5rem',
+                            border: `1px solid ${theme.border}`,
+                            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+                            position: 'relative',
+                            overflow: 'hidden'
                         }}>
-                            <h2 style={{ fontSize: '2.5rem', fontWeight: '800', color: '#1e293b', marginBottom: '0.5rem' }}>
-                                Welcome back, {user.name || 'Patient'}! 👋
-                            </h2>
-                            <p style={{ fontSize: '1.125rem', color: '#64748b', marginBottom: '2rem' }}>
-                                Your health journey starts here. Book appointments, track your medical history, and stay connected with your healthcare providers.
-                            </p>
-                            <div style={{ display: 'flex', gap: '1rem' }}>
-                                <button onClick={() => setActiveTab('book')} style={{
-                                    padding: '1rem 2rem',
-                                    background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                                    color: 'white',
-                                    border: 'none',
-                                    borderRadius: '12px',
-                                    fontWeight: '700',
-                                    fontSize: '1.0625rem',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem',
-                                    boxShadow: '0 10px 30px rgba(102, 126, 234, 0.3)'
-                                }}>
-                                    <FaCalendarAlt /> Book Appointment
-                                </button>
-                                <button onClick={() => setActiveTab('history')} style={{
-                                    padding: '1rem 2rem',
-                                    background: 'white',
-                                    color: '#667eea',
-                                    border: '2px solid #667eea',
-                                    borderRadius: '12px',
-                                    fontWeight: '700',
-                                    fontSize: '1.0625rem',
-                                    cursor: 'pointer',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    gap: '0.5rem'
-                                }}>
-                                    <FaHistory /> View History
-                                </button>
+                            {/* Dark overlay for text readability */}
+                            <div style={{
+                                position: 'absolute',
+                                inset: 0,
+                                background: 'linear-gradient(135deg, rgba(15,23,42,0.72) 0%, rgba(30,58,138,0.55) 100%)',
+                                borderRadius: '32px',
+                                zIndex: 0,
+                            }} />
+
+
+                            <div style={{ position: 'relative', zIndex: 1 }}>
+                                <h2 style={{ fontSize: '3rem', fontWeight: '900', color: '#ffffff', marginBottom: '0.75rem', letterSpacing: '-0.02em' }}>
+                                    Welcome back, {user.name || 'Patient'}! 👋
+                                </h2>
+                                <p style={{ fontSize: '1.25rem', color: 'rgba(255,255,255,0.85)', marginBottom: '2.5rem', maxWidth: '700px', lineHeight: '1.6' }}>
+                                    Your health journey starts here. Book appointments, track your medical history, and stay connected with your healthcare providers.
+                                </p>
+                                <div style={{ display: 'flex', gap: '1.25rem' }}>
+                                    <button onClick={() => setActiveTab('book')} style={{
+                                        padding: '1.25rem 2.5rem',
+                                        background: `linear-gradient(135deg, ${theme.accent}, ${theme.mutedAccent})`,
+                                        color: 'white',
+                                        border: 'none',
+                                        borderRadius: '16px',
+                                        fontWeight: '750',
+                                        fontSize: '1.125rem',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.75rem',
+                                        boxShadow: `0 20px 40px ${theme.accent}4d`,
+                                        transition: 'all 0.3s ease'
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+                                    onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                                    >
+                                        <FaCalendarAlt /> Book Appointment
+                                    </button>
+                                    <button onClick={() => setActiveTab('history')} style={{
+                                        padding: '1.125rem 2.25rem',
+                                        background: 'rgba(255, 255, 255, 0.8)',
+                                        color: theme.accent,
+                                        border: `2px solid ${theme.border}`,
+                                        borderRadius: '16px',
+                                        fontWeight: '750',
+                                        fontSize: '1.125rem',
+                                        cursor: 'pointer',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.75rem',
+                                        transition: 'all 0.3s ease'
+                                    }}
+                                    onMouseEnter={e => e.currentTarget.style.background = 'white'}
+                                    onMouseLeave={e => e.currentTarget.style.background = 'rgba(255, 255, 255, 0.8)'}
+                                    >
+                                        <FaHistory /> View History
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+
+                        {/* ── Stats Banner ─────────────────────── */}
+                        <div style={{
+                            position: 'relative',
+                            borderRadius: '28px',
+                            overflow: 'hidden',
+                            marginBottom: '2rem',
+                            boxShadow: '0 20px 40px rgba(0,0,0,0.15)',
+                        }}>
+                            {/* Background image overlay */}
+                            <div style={{
+                                position: 'absolute', inset: 0,
+                                background: 'url(https://images.unsplash.com/photo-1551601651-2a8555f1a136?w=1400&q=80) center/cover no-repeat',
+                                filter: 'brightness(0.5)',
+                                zIndex: 0,
+                            }} />
+                            <div style={{
+                                position: 'relative', zIndex: 1,
+                                display: 'grid',
+                                gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
+                                gap: 0,
+                            }}>
+                                {[
+                                    { end: 250000, suffix: '+', label: 'BENEFICIARIES', formatted: true },
+                                    { end: 30000, suffix: '+', label: 'DELIVERIES', formatted: true },
+                                    { end: 6000, suffix: '+', label: 'LAPAROSCOPIC SURGERIES', formatted: true },
+                                    { end: 30, suffix: '+', label: 'SPECIALISED DOCTORS', formatted: false },
+                                ].map((stat, i) => (
+                                    <StatCounterCard key={i} stat={stat} />
+                                ))}
                             </div>
                         </div>
 
                         {/* Quick Stats */}
+
                         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '1.5rem', marginBottom: '2rem' }}>
                             {[
-                                { icon: '📅', label: 'Next Appointment', value: upcomingAppointments[0] ? new Date(upcomingAppointments[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'None', color: '#667eea' },
-                                { icon: '✅', label: 'Total Visits', value: completedAppointments.length, color: '#48bb78' },
-                                { icon: '👨‍⚕️', label: 'Doctors Consulted', value: new Set(myAppointments.map(a => a.doctorId?._id)).size, color: '#f6ad55' },
-                                { icon: '⏰', label: 'Pending', value: upcomingAppointments.length, color: '#4299e1' },
+                                { icon: '📅', label: 'Next Appointment', value: upcomingAppointments[0] ? new Date(upcomingAppointments[0].date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'None', color: theme.accent },
+                                { icon: '👨‍⚕️', label: 'Doctors Consulted', value: new Set(myAppointments.map(a => a.doctorId?._id)).size, color: '#f59e0b' },
+                                { icon: '⏰', label: 'Pending Slots', value: upcomingAppointments.length, color: '#6366f1' },
                             ].map((stat, i) => (
                                 <div key={i} style={{
-                                    background: 'rgba(255, 255, 255, 0.95)',
-                                    backdropFilter: 'blur(20px)',
-                                    borderRadius: '20px',
+                                    background: theme.glassBg,
+                                    backdropFilter: 'blur(16px)',
+                                    borderRadius: '24px',
                                     padding: '2rem',
-                                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.08)',
-                                    borderLeft: `4px solid ${stat.color}`
-                                }}>
-                                    <div style={{ fontSize: '2.5rem', marginBottom: '0.5rem' }}>{stat.icon}</div>
-                                    <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '0.5rem', fontWeight: '600', textTransform: 'uppercase' }}>{stat.label}</p>
-                                    <p style={{ fontSize: '2rem', fontWeight: '800', color: '#1e293b' }}>{stat.value}</p>
+                                    boxShadow: '0 10px 30px rgba(0, 0, 0, 0.02)',
+                                    border: `1px solid ${theme.border}`,
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    transition: 'transform 0.3s ease',
+                                }}
+                                onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-5px)'}
+                                onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                                >
+                                    <div style={{ 
+                                        width: '56px', 
+                                        height: '56px', 
+                                        background: `${stat.color}15`, 
+                                        borderRadius: '16px', 
+                                        display: 'flex', 
+                                        alignItems: 'center', 
+                                        justifyContent: 'center', 
+                                        fontSize: '1.75rem', 
+                                        marginBottom: '1.5rem' 
+                                    }}>{stat.icon}</div>
+                                    <p style={{ fontSize: '0.875rem', color: '#64748b', marginBottom: '0.5rem', fontWeight: '700', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{stat.label}</p>
+                                    <p style={{ fontSize: '2.25rem', fontWeight: '900', color: '#0f172a' }}>{stat.value}</p>
                                 </div>
                             ))}
+
                         </div>
 
                         {/* Recent Appointments */}
                         <div style={{
-                            background: 'rgba(255, 255, 255, 0.95)',
+                            background: theme.glassBg,
                             backdropFilter: 'blur(20px)',
-                            borderRadius: '20px',
-                            padding: '2rem',
-                            boxShadow: '0 10px 40px rgba(0, 0, 0, 0.08)'
+                            borderRadius: '32px',
+                            padding: '2.5rem',
+                            boxShadow: '0 20px 50px -12px rgba(0, 0, 0, 0.05)',
+                            border: `1px solid ${theme.border}`
                         }}>
+
                             <h3 style={{ fontSize: '1.5rem', fontWeight: '800', color: '#1e293b', marginBottom: '1.5rem' }}>
                                 📅 Upcoming Appointments
                             </h3>
@@ -776,49 +1128,56 @@ const PatientDashboard = () => {
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                     {upcomingAppointments.slice(0, 3).map(appt => (
                                         <div key={appt._id} style={{
-                                            background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
-                                            borderRadius: '16px',
-                                            padding: '1.5rem',
+                                            background: 'rgba(255, 255, 255, 0.5)',
+                                            borderRadius: '20px',
+                                            padding: '1.75rem',
                                             display: 'flex',
                                             justifyContent: 'space-between',
                                             alignItems: 'center',
-                                            border: '2px solid #e2e8f0'
-                                        }}>
+                                            border: `1px solid ${theme.border}`,
+                                            transition: 'transform 0.2s ease'
+                                        }}
+                                        onMouseEnter={e => e.currentTarget.style.transform = 'translateX(8px)'}
+                                        onMouseLeave={e => e.currentTarget.style.transform = 'translateX(0)'}
+                                        >
                                             <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
                                                 <div style={{
                                                     width: '60px',
                                                     height: '60px',
-                                                    background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                                                    borderRadius: '14px',
+                                                    background: `linear-gradient(135deg, ${theme.accent}, ${theme.mutedAccent})`,
+                                                    borderRadius: '18px',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
                                                     color: 'white',
                                                     fontSize: '1.25rem',
-                                                    fontWeight: '800'
+                                                    fontWeight: '800',
+                                                    boxShadow: `0 8px 16px ${theme.accent}33`
                                                 }}>
                                                     👨‍⚕️
                                                 </div>
                                                 <div>
-                                                    <p style={{ fontWeight: '800', fontSize: '1.125rem', color: '#1e293b', marginBottom: '0.25rem' }}>
+                                                    <p style={{ fontWeight: '800', fontSize: '1.125rem', color: '#0f172a', marginBottom: '0.25rem' }}>
                                                         {appt.doctorId?.userId?.name || 'Doctor'}
                                                     </p>
-                                                    <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
-                                                        {new Date(appt.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} • {appt.timeSlot}
+                                                    <p style={{ color: '#475569', fontSize: '0.9375rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                                        <FaClock size={12} /> {new Date(appt.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} • {appt.timeSlot}
                                                     </p>
                                                 </div>
                                             </div>
                                             <span style={{
-                                                padding: '0.5rem 1rem',
-                                                background: appt.status === 'Pending' ? '#fef3c7' : '#d1fae5',
-                                                color: appt.status === 'Pending' ? '#92400e' : '#065f46',
-                                                borderRadius: '8px',
-                                                fontWeight: '700',
-                                                fontSize: '0.875rem'
+                                                padding: '0.625rem 1.25rem',
+                                                background: appt.status === 'Pending' ? '#fffbeb' : '#f0fdf4',
+                                                color: appt.status === 'Pending' ? '#92400e' : '#15803d',
+                                                borderRadius: '12px',
+                                                fontWeight: '800',
+                                                fontSize: '0.875rem',
+                                                border: `1px solid ${appt.status === 'Pending' ? '#fef3c7' : '#dcfce7'}`
                                             }}>
                                                 {appt.status}
                                             </span>
                                         </div>
+
                                     ))}
                                 </div>
                             ) : (
@@ -849,57 +1208,73 @@ const PatientDashboard = () => {
                         {activeStep === 1 && (
                             <div>
                                 {/* Search and Filter */}
-                                <div style={{
-                                    background: 'rgba(255, 255, 255, 0.95)',
-                                    backdropFilter: 'blur(20px)',
-                                    borderRadius: '20px',
-                                    padding: '2rem',
-                                    marginBottom: '2rem',
-                                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.08)'
-                                }}>
-                                    <h2 style={{ fontSize: '2rem', fontWeight: '800', color: '#1e293b', marginBottom: '1.5rem' }}>
-                                        🔍 Find Your Doctor
-                                    </h2>
-                                    <div style={{ display: 'flex', gap: '1rem', marginBottom: '1.5rem' }}>
-                                        <div style={{ flex: 1, position: 'relative' }}>
-                                            <FaSearch style={{ position: 'absolute', left: '1.25rem', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-                                            <input
-                                                type="text"
-                                                placeholder="Search doctors by name or specialty..."
-                                                value={searchTerm}
-                                                onChange={(e) => setSearchTerm(e.target.value)}
+                                    <div style={{
+                                        background: theme.glassBg,
+                                        backdropFilter: 'blur(20px)',
+                                        borderRadius: '32px',
+                                        padding: '2.5rem',
+                                        marginBottom: '2.5rem',
+                                        boxShadow: '0 20px 50px -12px rgba(0, 0, 0, 0.05)',
+                                        border: `1px solid ${theme.border}`
+                                    }}>
+                                        <h2 style={{ fontSize: '2.25rem', fontWeight: '900', color: '#0f172a', marginBottom: '1.75rem', letterSpacing: '-0.02em' }}>
+                                            🔍 Find Your Doctor
+                                        </h2>
+                                        <div style={{ display: 'flex', gap: '1.25rem', marginBottom: '1.5rem' }}>
+                                            <div style={{ flex: 1, position: 'relative' }}>
+                                                <FaSearch style={{ position: 'absolute', left: '1.5rem', top: '50%', transform: 'translateY(-50%)', color: theme.accent }} />
+                                                <input
+                                                    type="text"
+                                                    placeholder="Search doctors by name or specialty..."
+                                                    value={searchTerm}
+                                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                                    style={{
+                                                        width: '100%',
+                                                        padding: '1.25rem 1.25rem 1.25rem 3.5rem',
+                                                        border: `2px solid ${theme.border}`,
+                                                        borderRadius: '18px',
+                                                        fontSize: '1.0625rem',
+                                                        outline: 'none',
+                                                        transition: 'all 0.3s ease',
+                                                        background: 'rgba(255, 255, 255, 0.7)',
+                                                        color: '#0f172a'
+                                                    }}
+                                                    onFocus={e => {
+                                                        e.target.style.borderColor = theme.accent;
+                                                        e.target.style.background = 'white';
+                                                        e.target.style.boxShadow = `0 0 0 4px ${theme.accent}11`;
+                                                    }}
+                                                    onBlur={e => {
+                                                        e.target.style.borderColor = theme.border;
+                                                        e.target.style.background = 'rgba(255, 255, 255, 0.7)';
+                                                        e.target.style.boxShadow = 'none';
+                                                    }}
+                                                />
+                                            </div>
+                                            <select
+                                                value={filterSpecialty}
+                                                onChange={(e) => setFilterSpecialty(e.target.value)}
                                                 style={{
-                                                    width: '100%',
-                                                    padding: '1rem 1rem 1rem 3rem',
-                                                    border: '2px solid #e2e8f0',
-                                                    borderRadius: '12px',
+                                                    padding: '0 2rem',
+                                                    border: `2px solid ${theme.border}`,
+                                                    borderRadius: '18px',
                                                     fontSize: '1rem',
                                                     outline: 'none',
-                                                    transition: 'border 0.3s'
+                                                    background: 'rgba(255, 255, 255, 0.7)',
+                                                    cursor: 'pointer',
+                                                    fontWeight: '700',
+                                                    color: '#0f172a',
+                                                    minWidth: '220px'
                                                 }}
-                                            />
+                                            >
+                                                {specialties.map(spec => (
+                                                    <option key={spec} value={spec}>
+                                                        {spec === 'all' ? '🏥 All Specialties' : spec}
+                                                    </option>
+                                                ))}
+                                            </select>
                                         </div>
-                                        <select
-                                            value={filterSpecialty}
-                                            onChange={(e) => setFilterSpecialty(e.target.value)}
-                                            style={{
-                                                padding: '1rem 1.5rem',
-                                                border: '2px solid #e2e8f0',
-                                                borderRadius: '12px',
-                                                fontSize: '1rem',
-                                                outline: 'none',
-                                                background: 'white',
-                                                cursor: 'pointer',
-                                                fontWeight: '600'
-                                            }}
-                                        >
-                                            {specialties.map(spec => (
-                                                <option key={spec} value={spec}>
-                                                    {spec === 'all' ? '🏥 All Specialties' : spec}
-                                                </option>
-                                            ))}
-                                        </select>
-                                    </div>
+
                                     <p style={{ color: '#64748b', fontSize: '0.9375rem' }}>
                                         Found {filteredDoctors.length} doctor{filteredDoctors.length !== 1 ? 's' : ''}
                                     </p>
@@ -915,25 +1290,28 @@ const PatientDashboard = () => {
                                                 setActiveStep(2);
                                             }}
                                             style={{
-                                                background: 'rgba(255, 255, 255, 0.95)',
+                                                background: theme.glassBg,
                                                 backdropFilter: 'blur(20px)',
-                                                borderRadius: '20px',
-                                                padding: '2rem',
+                                                borderRadius: '24px',
+                                                padding: '2.25rem',
                                                 cursor: 'pointer',
-                                                boxShadow: '0 10px 40px rgba(0, 0, 0, 0.08)',
-                                                transition: 'all 0.3s',
-                                                border: '2px solid transparent'
+                                                boxShadow: '0 10px 30px rgba(0, 0, 0, 0.03)',
+                                                transition: 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+                                                border: `1px solid ${theme.border}`,
+                                                position: 'relative',
+                                                overflow: 'hidden'
                                             }}
                                             onMouseEnter={(e) => {
-                                                e.currentTarget.style.transform = 'translateY(-8px)';
-                                                e.currentTarget.style.boxShadow = '0 20px 60px rgba(102, 126, 234, 0.2)';
+                                                e.currentTarget.style.transform = 'translateY(-12px)';
+                                                e.currentTarget.style.boxShadow = `0 30px 60px -12px ${theme.accent}22`;
                                                 e.currentTarget.style.borderColor = doctor.color;
                                             }}
                                             onMouseLeave={(e) => {
                                                 e.currentTarget.style.transform = 'translateY(0)';
-                                                e.currentTarget.style.boxShadow = '0 10px 40px rgba(0, 0, 0, 0.08)';
-                                                e.currentTarget.style.borderColor = 'transparent';
+                                                e.currentTarget.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.03)';
+                                                e.currentTarget.style.borderColor = theme.border;
                                             }}
+
                                         >
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '1.5rem' }}>
                                                 {/* Show actual profile image if available */}
@@ -1060,12 +1438,14 @@ const PatientDashboard = () => {
                 {/* Appointments Tab */}
                 {activeTab === 'appointments' && (
                     <div style={{
-                        background: 'rgba(255, 255, 255, 0.95)',
+                        background: theme.glassBg,
                         backdropFilter: 'blur(20px)',
-                        borderRadius: '20px',
-                        padding: '2rem',
-                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.08)'
+                        borderRadius: '32px',
+                        padding: '2.5rem',
+                        boxShadow: '0 20px 50px -12px rgba(0, 0, 0, 0.05)',
+                        border: `1px solid ${theme.border}`
                     }}>
+
                         <h2 style={{ fontSize: '2rem', fontWeight: '800', color: '#1e293b', marginBottom: '1.5rem' }}>
                             📅 My Appointments
                         </h2>
@@ -1074,27 +1454,42 @@ const PatientDashboard = () => {
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
                                 {upcomingAppointments.map(appt => (
                                     <div key={appt._id} style={{
-                                        background: 'linear-gradient(135deg, #f8fafc, #f1f5f9)',
-                                        borderRadius: '16px',
-                                        padding: '2rem',
-                                        border: '2px solid #e2e8f0'
-                                    }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        background: 'rgba(255, 255, 255, 0.5)',
+                                        borderRadius: '24px',
+                                        padding: '2.5rem',
+                                        border: `1px solid ${theme.border}`,
+                                        transition: 'all 0.3s ease',
+                                        display: 'flex',
+                                        justifyContent: 'space-between',
+                                        alignItems: 'center'
+                                    }}
+                                    onMouseEnter={e => {
+                                        e.currentTarget.style.background = 'white';
+                                        e.currentTarget.style.transform = 'translateY(-4px)';
+                                    }}
+                                    onMouseLeave={e => {
+                                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.5)';
+                                        e.currentTarget.style.transform = 'translateY(0)';
+                                    }}
+                                    >
+
                                             <div style={{ display: 'flex', gap: '1.5rem', alignItems: 'center' }}>
                                                 <div style={{
-                                                    width: '70px',
-                                                    height: '70px',
-                                                    background: 'linear-gradient(135deg, #667eea, #764ba2)',
-                                                    borderRadius: '16px',
+                                                    width: '80px',
+                                                    height: '80px',
+                                                    background: `linear-gradient(135deg, ${theme.accent}, ${theme.mutedAccent})`,
+                                                    borderRadius: '20px',
                                                     display: 'flex',
                                                     alignItems: 'center',
                                                     justifyContent: 'center',
                                                     color: 'white',
-                                                    fontSize: '1.5rem',
-                                                    fontWeight: '800'
+                                                    fontSize: '1.75rem',
+                                                    fontWeight: '800',
+                                                    boxShadow: `0 12px 24px ${theme.accent}33`
                                                 }}>
                                                     👨‍⚕️
                                                 </div>
+
                                                 <div>
                                                     <p style={{ fontWeight: '800', fontSize: '1.25rem', color: '#1e293b', marginBottom: '0.5rem' }}>
                                                         {appt.doctorId?.userId?.name || 'Doctor'}
@@ -1117,11 +1512,11 @@ const PatientDashboard = () => {
                                             }}>
                                                 {appt.status}
                                             </span>
-                                        </div>
                                     </div>
                                 ))}
                             </div>
                         ) : (
+
                             <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
                                 <p style={{ fontSize: '4rem', marginBottom: '1rem' }}>📅</p>
                                 <p style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '0.5rem' }}>No appointments yet</p>
@@ -1146,12 +1541,14 @@ const PatientDashboard = () => {
                 {/* History Tab — shows ALL appointments */}
                 {activeTab === 'history' && (
                     <div style={{
-                        background: 'rgba(255, 255, 255, 0.95)',
+                        background: theme.glassBg,
                         backdropFilter: 'blur(20px)',
-                        borderRadius: '20px',
-                        padding: '2rem',
-                        boxShadow: '0 10px 40px rgba(0, 0, 0, 0.08)'
+                        borderRadius: '32px',
+                        padding: '2.5rem',
+                        boxShadow: '0 20px 50px -12px rgba(0, 0, 0, 0.05)',
+                        border: `1px solid ${theme.border}`
                     }}>
+
                         {/* Header row */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem', flexWrap: 'wrap', gap: '1rem' }}>
                             <div>
@@ -1263,26 +1660,32 @@ const PatientDashboard = () => {
                                                             setShowDetailsModal(true);
                                                         }}
                                                         style={{
-                                                            padding: '8px 16px',
-                                                            background: 'linear-gradient(135deg,#667eea,#764ba2)',
-                                                            color: 'white', border: 'none', borderRadius: '10px',
-                                                            fontWeight: '700', fontSize: '0.875rem',
+                                                            padding: '0.875rem 1.75rem',
+                                                            background: `linear-gradient(135deg, ${theme.accent}, ${theme.mutedAccent})`,
+                                                            color: 'white', border: 'none', borderRadius: '14px',
+                                                            fontWeight: '750', fontSize: '0.9375rem',
                                                             cursor: 'pointer', whiteSpace: 'nowrap',
-                                                            boxShadow: '0 4px 14px rgba(102,126,234,0.3)',
-                                                            transition: 'transform 0.2s',
+                                                            boxShadow: `0 8px 20px ${theme.accent}33`,
+                                                            transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
                                                         }}
-                                                        onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
-                                                        onMouseLeave={e => e.currentTarget.style.transform = 'translateY(0)'}
+                                                        onMouseEnter={e => {
+                                                            e.currentTarget.style.transform = 'translateY(-2px)';
+                                                            e.currentTarget.style.boxShadow = `0 12px 24px ${theme.accent}4d`;
+                                                        }}
+                                                        onMouseLeave={e => {
+                                                            e.currentTarget.style.transform = 'translateY(0)';
+                                                            e.currentTarget.style.boxShadow = `0 8px 20px ${theme.accent}33`;
+                                                        }}
                                                     >
                                                         👁️ View Details
                                                     </button>
                                                 </div>
                                             </div>
                                         );
-                                    })
-                                }
+                                    })}
                             </div>
                         ) : (
+
                             <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
                                 <p style={{ fontSize: '4rem', marginBottom: '1rem' }}>📋</p>
                                 <p style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '0.5rem' }}>No appointments yet</p>
@@ -1934,11 +2337,297 @@ const PatientDashboard = () => {
                                 e.target.style.boxShadow = '0 10px 30px rgba(102, 126, 234, 0.4)';
                             }}
                         >
-                            Close Details
                         </button>
                     </div>
                 </div>
             )}
+
+            {/* ── Medicines / Inventory Tab ──────────────────────────────── */}
+            {activeTab === 'medicines' && (
+                <div style={{
+                    maxWidth: '1200px',
+                    margin: '3rem auto 0',
+                    padding: '2.5rem',
+                    background: 'white',
+                    borderRadius: '24px',
+                    boxShadow: '0 20px 40px rgba(0,0,0,0.06)',
+                }}>
+                    <div style={{ marginBottom: '2.5rem', textAlign: 'center' }}>
+                        <h2 style={{ fontSize: '2rem', fontWeight: 800, color: '#1e293b', marginBottom: '0.5rem' }}>
+                            🏥 Pharmacy & Supply
+                        </h2>
+                        <p style={{ color: '#64748b', fontSize: '1.1rem' }}>
+                            View real-time availability of hospital medicines and equipment.
+                        </p>
+                    </div>
+
+                    {inventory.length === 0 ? (
+                        <div style={{ textAlign: 'center', padding: '4rem 2rem', color: '#94a3b8', background: '#f8fafc', borderRadius: '16px' }}>
+                            <p style={{ fontSize: '1.25rem', fontWeight: 600 }}>No Inventory Available</p>
+                        </div>
+                    ) : (
+                        <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                            gap: '1.5rem'
+                        }}>
+                            {inventory.map((item) => {
+                                const stockLevel = item.stockQuantity > 50 ? 'In Stock' : item.stockQuantity > 20 ? 'Low Stock' : 'Out of Stock';
+                                const statusColor = stockLevel === 'In Stock' ? '#10b981' : stockLevel === 'Low Stock' ? '#f59e0b' : '#ef4444';
+
+                                return (
+                                    <div key={item._id} style={{
+                                        border: '1px solid #e2e8f0',
+                                        borderRadius: '16px',
+                                        padding: '1.5rem',
+                                        background: '#fff',
+                                        transition: 'all 0.3s ease',
+                                        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.05)',
+                                        display: 'flex',
+                                        flexDirection: 'column',
+                                        justifyContent: 'space-between'
+                                    }}
+                                        onMouseEnter={(e) => {
+                                            e.currentTarget.style.transform = 'translateY(-5px)';
+                                            e.currentTarget.style.boxShadow = '0 20px 25px -5px rgba(0, 0, 0, 0.1)';
+                                            e.currentTarget.style.borderColor = theme.primary;
+                                        }}
+                                        onMouseLeave={(e) => {
+                                            e.currentTarget.style.transform = 'translateY(0)';
+                                            e.currentTarget.style.boxShadow = '0 4px 6px -1px rgba(0, 0, 0, 0.05)';
+                                            e.currentTarget.style.borderColor = '#e2e8f0';
+                                        }}
+                                    >
+                                        <div>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                                <span style={{
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: '700',
+                                                    textTransform: 'uppercase',
+                                                    letterSpacing: '0.5px',
+                                                    background: '#f1f5f9',
+                                                    color: '#475569',
+                                                    padding: '0.25rem 0.75rem',
+                                                    borderRadius: '999px'
+                                                }}>
+                                                    {item.category}
+                                                </span>
+                                                <span style={{
+                                                    fontSize: '0.85rem',
+                                                    fontWeight: '700',
+                                                    color: statusColor,
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '0.25rem'
+                                                }}>
+                                                    <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: statusColor }} />
+                                                    {stockLevel}
+                                                </span>
+                                            </div>
+                                            
+                                            <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: '#0f172a', marginBottom: '0.5rem' }}>
+                                                {item.itemName}
+                                            </h3>
+                                            
+                                            {item.manufacturer && (
+                                                <p style={{ color: '#64748b', fontSize: '0.875rem', marginBottom: '1rem' }}>
+                                                    By: {item.manufacturer}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        <div style={{ 
+                                            marginTop: '1.5rem', 
+                                            paddingTop: '1rem', 
+                                            borderTop: '1px solid #e2e8f0',
+                                            display: 'flex',
+                                            justifyContent: 'space-between',
+                                            alignItems: 'flex-end'
+                                        }}>
+                                            <div>
+                                                <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Current Stock</p>
+                                                <p style={{ fontSize: '1.5rem', fontWeight: '900', color: '#334155' }}>{item.stockQuantity}</p>
+                                            </div>
+                                            <div style={{ textAlign: 'right' }}>
+                                                <p style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: '600', textTransform: 'uppercase', marginBottom: '0.25rem' }}>Unit Price</p>
+                                                <p style={{ fontSize: '1.25rem', fontWeight: '800', color: theme.primary }}>₹{item.unitPrice}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            )}
+
+
+
+
+
+
+            {/* ── Location Map ────────────────────────────────────── */}
+            {activeTab === 'home' && (
+                <div style={{
+                    maxWidth: '1400px',
+                    margin: '4rem auto 0',
+                    padding: '0 2rem',
+                }}>
+                    <div style={{
+                        borderRadius: '24px',
+                        overflow: 'hidden',
+                        boxShadow: '0 20px 50px rgba(0,0,0,0.1)',
+                        border: '4px solid #fff'
+                    }}>
+                        <iframe 
+                            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3910.314837754416!2d77.40990627481555!3d11.457185988735993!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3ba93d129c91a2f1%3A0xf8e1475c75f0412d!2sAbhi%20SK%20Hospital%20Pvt%20Ltd!5e0!3m2!1sen!2sin!4v1773311886736!5m2!1sen!2sin" 
+                            width="100%" 
+                            height="400" 
+                            style={{ border: 0, display: 'block' }} 
+                            allowFullScreen="" 
+                            loading="lazy" 
+                            referrerPolicy="no-referrer-when-downgrade"
+                        ></iframe>
+                    </div>
+                </div>
+            )}
+
+            {/* ── Site Footer ──────────────────────────────────── */}
+            <footer style={{
+                background: '#f9f9f9',
+                borderTop: '1px solid #e8e8e8',
+                marginTop: '3rem',
+                fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
+            }}>
+                <div style={{
+                    maxWidth: '1400px', margin: '0 auto',
+                    padding: '3rem 2rem',
+                    display: 'grid',
+                    gridTemplateColumns: '1fr 2fr 1fr',
+                    gap: '3rem',
+                    alignItems: 'start',
+                }}>
+
+                    {/* ── Column 1 : Emergency Contact ── */}
+                    <div>
+                        <h4 style={{ fontSize: '0.82rem', fontWeight: 800, letterSpacing: '0.1em', color: '#222', textTransform: 'uppercase', marginBottom: '1.25rem' }}>
+                            Emergency Contact
+                        </h4>
+                        <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                            {[
+                                { icon: '📞', text: '04285 240130-33' },
+                                { icon: '📱', text: '94422 92995' },
+                                { icon: '✉️', text: 'info@abhiskhospital.com' },
+                            ].map(item => (
+                                <li key={item.text} style={{ display: 'flex', alignItems: 'center', gap: '0.65rem', fontSize: '0.92rem', color: '#444' }}>
+                                    <span style={{ fontSize: '1rem', color: '#f59e0b' }}>{item.icon}</span>
+                                    <span>{item.text}</span>
+                                </li>
+                            ))}
+                        </ul>
+                    </div>
+
+                    {/* ── Column 2 : Departments (two sub-columns) ── */}
+                    <div>
+                        <h4 style={{ fontSize: '0.82rem', fontWeight: 800, letterSpacing: '0.1em', color: '#222', textTransform: 'uppercase', marginBottom: '1.25rem' }}>
+                            Departments
+                        </h4>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.4rem 2rem' }}>
+                            {[
+                                'Emergency and Trauma care',
+                                'Pulmonology',
+                                'Intensive Care Unit',
+                                'Urology',
+                                'General, Laparoscopic and Plastic Surgery',
+                                'Nephrology',
+                                'Orthopedics and Trauma care',
+                                'Gastroenterology',
+                                'Otolaryngology',
+                                'Dermatology',
+                                'OBSTETRICS AND GYNECOLOGY',
+                                'Oncology',
+                                'Pediatrics and Neonatology',
+                                'Psychiatry',
+                                'In Vitro fertilization (IVF)',
+                                'Anesthesiology',
+                                'General Medicine & Diabetology',
+                                'Radiology',
+                                'Physiotherapy',
+                                '',
+                                'Neurology and Neuro-Surgery',
+                                '',
+                                'Cardiology',
+                                '',
+                            ].map((dept, i) => (
+                                dept ? (
+                                    <span key={i} style={{
+                                        fontSize: '0.875rem',
+                                        color: '#444',
+                                        fontWeight: 400,
+                                        lineHeight: 1.8,
+                                        cursor: 'default',
+                                    }}>{dept}</span>
+                                ) : <span key={i} />
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* ── Column 3 : Social Links + Address ── */}
+                    <div>
+                        <h4 style={{ fontSize: '0.82rem', fontWeight: 800, letterSpacing: '0.1em', color: '#222', textTransform: 'uppercase', marginBottom: '1.25rem' }}>
+                            Social Links
+                        </h4>
+
+                        {/* Social icons row */}
+                        <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem' }}>
+                            {[
+                                { label: 'f', href: 'https://www.facebook.com/abhiskhospital/', bg: '#1877f2' },
+                                { label: '𝕏', href: '#', bg: '#000' },
+                                { label: '▶', href: 'https://www.youtube.com/channel/UCJD3jM48hkOJgjDRwtY3lvw', bg: '#ff0000' },
+                            ].map(s => (
+                                <a key={s.label} href={s.href} target="_blank" rel="noopener noreferrer"
+                                    style={{
+                                        width: 36, height: 36, borderRadius: 6,
+                                        background: '#e8e8e8',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        color: '#555', fontWeight: 700, fontSize: '0.9rem',
+                                        textDecoration: 'none', transition: 'all 0.2s',
+                                    }}
+                                    onMouseEnter={e => { e.currentTarget.style.background = s.bg; e.currentTarget.style.color = 'white'; }}
+                                    onMouseLeave={e => { e.currentTarget.style.background = '#e8e8e8'; e.currentTarget.style.color = '#555'; }}
+                                >{s.label}</a>
+                            ))}
+                        </div>
+
+                        {/* Address */}
+                        <p style={{ fontSize: '0.875rem', color: '#555', lineHeight: 1.7, marginBottom: '1.25rem' }}>
+                            153, Sathy Main Road, Karrattadai Palayam, Post, Nallagoundenpalayam,
+                            Gobichettipalayam, Tamil Nadu 638452
+                        </p>
+
+                        {/* 24 Hour Service badge */}
+                        <div style={{
+                            display: 'inline-flex', alignItems: 'center', gap: '0.5rem',
+                            background: 'red', color: 'white',
+                            padding: '0.7rem 1.25rem', borderRadius: 8,
+                            fontSize: '0.875rem', fontWeight: 700,
+                        }}>
+                            ➕ 24 Hours Service
+                        </div>
+                    </div>
+                </div>
+
+                {/* Bottom bar */}
+                <div style={{
+                    borderTop: '1px solid #e2e8f0',
+                    padding: '1rem 2rem',
+                    textAlign: 'center',
+                    fontSize: '0.8rem',
+                    color: '#94a3b8',
+                }}>
+                    © {new Date().getFullYear()} ABHI SK HOSPITAL · All rights reserved.
+                </div>
+            </footer>
         </div>
     );
 };

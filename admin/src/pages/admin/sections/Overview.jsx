@@ -35,20 +35,7 @@ const AVATARS = [
 ];
 
 const Overview = ({ stats, appointments }) => {
-    // Generate mock analytics data derived from appointments/stats for demonstration
-    const revenueData = {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        datasets: [
-            {
-                label: 'Monthly Revenue (₹)',
-                data: [4200, 5800, 7100, 8300, 11000, stats.revenue || 12400],
-                borderColor: '#4f46e5',
-                backgroundColor: 'rgba(79, 70, 229, 0.1)',
-                fill: true,
-                tension: 0.4,
-            },
-        ],
-    };
+
 
     const statusCounts = appointments.reduce((acc, curr) => {
         acc[curr.status || 'pending'] = (acc[curr.status || 'pending'] || 0) + 1;
@@ -84,13 +71,7 @@ const Overview = ({ stats, appointments }) => {
                     icon={<FaUsers />}
                     gradient="linear-gradient(135deg, #7e22ce, #9333ea)"
                 />
-                <StatCard
-                    title="Revenue"
-                    value={`₹${((stats.revenue || 0) / 1000).toFixed(1)}k`}
-                    change="+8.2%"
-                    icon={<FaMoneyBillWave />}
-                    gradient="linear-gradient(135deg, #10b981, #34d399)"
-                />
+
                 <StatCard
                     title="Pending"
                     value={stats.appointments || '0'}
@@ -102,25 +83,7 @@ const Overview = ({ stats, appointments }) => {
 
             {/* Analytics Section */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '1.5rem' }}>
-                <div className="admin-glass-card" style={{ padding: '1.5rem' }}>
-                    <div className="admin-section-header">
-                        <h3 className="admin-section-title">Revenue Analytics</h3>
-                    </div>
-                    <div style={{ height: '300px' }}>
-                        <Line
-                            data={revenueData}
-                            options={{
-                                responsive: true,
-                                maintainAspectRatio: false,
-                                plugins: { legend: { display: false } },
-                                scales: {
-                                    y: { beginAtZero: true, grid: { color: 'rgba(0,0,0,0.05)' } },
-                                    x: { grid: { display: false } }
-                                }
-                            }}
-                        />
-                    </div>
-                </div>
+
 
                 <div className="admin-glass-card" style={{ padding: '1.5rem' }}>
                     <div className="admin-section-header">
